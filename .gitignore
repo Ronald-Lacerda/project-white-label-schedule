@@ -1,0 +1,30 @@
+# Environment overrides
+.env
+frontend/.env
+backend/.env
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+
+# Backend build output and local runtime data
+backend/bin/
+backend/coverage.out
+backend/uploads/
+uploads/
+
+# Logs
+*.log
+*.err.log
+frontend-dev.log
+frontend-dev.err.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+__pycache__/

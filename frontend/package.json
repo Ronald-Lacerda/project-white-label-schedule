@@ -1,0 +1,22 @@
+{
+  "name": "schedule-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --no-fork --clear --port 3000",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "validate": "npm run build",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^3.11.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.11.4",
+    "typescript": "^5.4.0"
+  }
+}
