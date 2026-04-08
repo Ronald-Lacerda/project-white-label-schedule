@@ -77,7 +77,7 @@ func (r *repository) Update(ctx context.Context, e *Establishment) error {
 }
 
 func (r *repository) GetBusinessHours(ctx context.Context, establishmentID string) ([]BusinessHour, error) {
-	var hours []BusinessHour
+	hours := make([]BusinessHour, 0)
 	err := r.db.SelectContext(ctx, &hours,
 		`SELECT * FROM business_hours WHERE establishment_id = ? ORDER BY day_of_week`,
 		establishmentID,

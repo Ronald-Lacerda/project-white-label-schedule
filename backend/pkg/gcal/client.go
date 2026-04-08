@@ -140,6 +140,15 @@ func (c *Client) CreateEvent(ctx context.Context, calendarID string, event Event
 	return created.Id, nil
 }
 
+// DeleteCalendar remove uma agenda secundaria pelo seu ID.
+func (c *Client) DeleteCalendar(ctx context.Context, calendarID string) error {
+	err := c.svc.Calendars.Delete(calendarID).Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("gcal: failed to delete calendar %q: %w", calendarID, err)
+	}
+	return nil
+}
+
 // DeleteEvent remove um evento do calendario. Ignora o erro 404 (ja deletado).
 func (c *Client) DeleteEvent(ctx context.Context, calendarID, eventID string) error {
 	err := c.svc.Events.Delete(calendarID, eventID).Context(ctx).Do()

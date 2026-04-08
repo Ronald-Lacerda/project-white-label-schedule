@@ -6,6 +6,7 @@
     :class="buttonClass"
     :aria-disabled="disabled ? 'true' : undefined"
     :tabindex="disabled ? -1 : undefined"
+    @click="handleClick"
   >
     <slot />
   </NuxtLink>
@@ -16,12 +17,17 @@
     :type="type"
     :disabled="disabled"
     :class="buttonClass"
+    @click="handleClick"
   >
     <slot />
   </button>
 </template>
 
 <script setup lang="ts">
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = withDefaults(defineProps<{
   to?: string
   type?: 'button' | 'submit' | 'reset'
@@ -38,6 +44,10 @@ const props = withDefaults(defineProps<{
   disabled: false,
 })
 
+const emit = defineEmits<{
+  click: [event: MouseEvent]
+}>()
+
 const buttonClass = computed(() => [
   'ds-button',
   props.variant === 'primary' && 'ds-button-primary',
@@ -49,6 +59,16 @@ const buttonClass = computed(() => [
   props.block && 'w-full',
   props.disabled && 'pointer-events-none',
 ])
+
+function handleClick(event: MouseEvent) {
+  if (props.disabled) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+
+  emit('click', event)
+}
 
 const { to, type, disabled } = toRefs(props)
 </script>

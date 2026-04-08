@@ -16,9 +16,9 @@ export function useBusinessHours() {
   const error = ref('')
 
   // Inicializa os 7 dias com valores padrão se não existirem
-  function initDefaults(data: BusinessHour[]): BusinessHour[] {
+  function initDefaults(data: BusinessHour[] | null | undefined): BusinessHour[] {
     return Array.from({ length: 7 }, (_, i) => {
-      const existing = data.find(h => h.day_of_week === i)
+      const existing = (data ?? []).find(h => h.day_of_week === i)
       return existing ?? {
         id: '',
         day_of_week: i,

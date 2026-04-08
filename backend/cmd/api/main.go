@@ -60,6 +60,7 @@ func main() {
 	svcSvc := catalog.NewSvcService(svcRepo)
 	calendarSvc := calendar.NewService(calendarRepo)
 	schedulingSvc := scheduling.NewService(schedulingRepo, rdb)
+	profSvc.WithCalendar(calendarSvc)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	uploadsDir := "uploads/logos"

@@ -9,9 +9,6 @@
         </p>
       </div>
 
-      <AppButton to="/dashboard/settings/google" variant="secondary">
-        Abrir Google Agenda
-      </AppButton>
     </div>
 
     <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">
@@ -35,11 +32,25 @@
         </div>
 
         <div class="mt-4 flex flex-wrap gap-3">
-          <AppButton to="/dashboard/settings/google" variant="primary">
-            <AppGoogleIcon v-if="!establishment?.google_calendar_connected" />
-            {{ establishment?.google_calendar_connected ? 'Gerenciar conexao' : 'Conectar Google Agenda' }}
+          <AppButton
+            v-if="establishment?.google_calendar_connected"
+            to="/dashboard/settings/google"
+            variant="primary"
+          >
+            Gerenciar conexao
           </AppButton>
+          <button
+            v-else
+            type="button"
+            class="ds-button ds-button-primary"
+            :disabled="connecting"
+            @click="handleConnect"
+          >
+            <AppGoogleIcon />
+            {{ connecting ? 'Redirecionando...' : 'Conectar Google Agenda' }}
+          </button>
         </div>
+        <p v-if="connectError" class="mt-3 text-sm" style="color: var(--color-danger);">{{ connectError }}</p>
       </AppSurface>
 
       <div>
@@ -189,7 +200,24 @@ const {
   uploadLogo,
 } = useEstablishment()
 
+const { getAuthUrl } = useGoogleCalendar()
+
 await Promise.all([fetchEstablishment(), fetchWhitelabel()])
+
+const connecting = ref(false)
+const connectError = ref<string | null>(null)
+
+async function handleConnect() {
+  connecting.value = true
+  connectError.value = null
+  try {
+    const url = await getAuthUrl()
+    window.location.href = url
+  } catch (e: any) {
+    connectError.value = e?.data?.error?.message ?? 'Erro ao iniciar conexao.'
+    connecting.value = false
+  }
+}
 
 const estForm = reactive({
   name: establishment.value?.name ?? '',

@@ -7,12 +7,24 @@ import (
 	"schedule/internal/shared"
 )
 
+// CalendarProvisioner é implementado por calendar.Service e injetado opcionalmente.
+type CalendarProvisioner interface {
+	ProvisionProfessional(ctx context.Context, establishmentID, professionalID, professionalName string) error
+	DeprovisionProfessional(ctx context.Context, establishmentID, calendarID string) error
+}
+
 type ProfessionalService struct {
-	repo ProfessionalRepository
+	repo    ProfessionalRepository
+	calSvc  CalendarProvisioner
 }
 
 func NewProfessionalService(repo ProfessionalRepository) *ProfessionalService {
 	return &ProfessionalService{repo: repo}
+}
+
+func (s *ProfessionalService) WithCalendar(cal CalendarProvisioner) *ProfessionalService {
+	s.calSvc = cal
+	return s
 }
 
 func (s *ProfessionalService) List(ctx context.Context, establishmentID string) ([]Professional, error) {
@@ -39,6 +51,11 @@ func (s *ProfessionalService) Create(ctx context.Context, establishmentID string
 	if err := s.repo.Create(ctx, p); err != nil {
 		return nil, err
 	}
+
+	if s.calSvc != nil {
+		_ = s.calSvc.ProvisionProfessional(ctx, establishmentID, p.ID, p.Name)
+	}
+
 	return p, nil
 }
 
@@ -61,10 +78,20 @@ func (s *ProfessionalService) Update(ctx context.Context, id, establishmentID st
 }
 
 func (s *ProfessionalService) Delete(ctx context.Context, id, establishmentID string) error {
-	if _, err := s.repo.FindByID(ctx, id, establishmentID); err != nil {
+	p, err := s.repo.FindByID(ctx, id, establishmentID)
+	if err != nil {
 		return err
 	}
-	return s.repo.SoftDelete(ctx, id, establishmentID)
+
+	if err := s.repo.SoftDelete(ctx, id, establishmentID); err != nil {
+		return err
+	}
+
+	if s.calSvc != nil && p.GoogleCalendarID != nil && *p.GoogleCalendarID != "" {
+		_ = s.calSvc.DeprovisionProfessional(ctx, establishmentID, *p.GoogleCalendarID)
+	}
+
+	return nil
 }
 
 func (s *ProfessionalService) GetHours(ctx context.Context, id, establishmentID string) ([]ProfessionalHour, error) {

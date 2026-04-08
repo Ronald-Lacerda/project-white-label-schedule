@@ -165,6 +165,52 @@ func (s *Service) GetStatus(ctx context.Context, establishmentID string) (*Statu
 	}, nil
 }
 
+// ProvisionProfessional cria uma agenda Google para um profissional recém-criado,
+// se o estabelecimento já tiver a integração ativa.
+func (s *Service) ProvisionProfessional(ctx context.Context, establishmentID, professionalID, professionalName string) error {
+	token, err := s.repo.GetToken(ctx, establishmentID)
+	if err != nil {
+		// Estabelecimento sem integração — silencioso.
+		return nil
+	}
+
+	client, err := gcal.NewClient(ctx, &oauth2.Token{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+	})
+	if err != nil {
+		return nil
+	}
+
+	calID, err := client.CreateCalendar(ctx, professionalName)
+	if err != nil {
+		return nil
+	}
+
+	return s.repo.UpdateCalendarID(ctx, professionalID, calID)
+}
+
+// DeprovisionProfessional exclui a agenda Google de um profissional ao removê-lo.
+func (s *Service) DeprovisionProfessional(ctx context.Context, establishmentID, calendarID string) error {
+	token, err := s.repo.GetToken(ctx, establishmentID)
+	if err != nil {
+		return nil
+	}
+
+	client, err := gcal.NewClient(ctx, &oauth2.Token{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+	})
+	if err != nil {
+		return nil
+	}
+
+	_ = client.DeleteCalendar(ctx, calendarID)
+	return nil
+}
+
 // RefreshTokenIfNeeded renova o access token se ele expirar nos proximos 5 minutos.
 func (s *Service) RefreshTokenIfNeeded(ctx context.Context, establishmentID string) (*OAuthToken, error) {
 	token, err := s.repo.GetToken(ctx, establishmentID)

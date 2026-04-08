@@ -53,23 +53,25 @@
         </div>
 
         <div class="mt-6 flex flex-wrap gap-3 border-t pt-5" style="border-color: var(--color-border);">
-          <AppButton
+          <button
             v-if="!status?.connected"
-            variant="primary"
+            type="button"
+            class="ds-button ds-button-primary"
             :disabled="connecting"
             @click="handleConnect"
           >
             <AppGoogleIcon />
             {{ connecting ? 'Redirecionando...' : 'Conectar Google Agenda' }}
-          </AppButton>
-          <AppButton
+          </button>
+          <button
             v-else
-            variant="danger"
+            type="button"
+            class="ds-button ds-button-danger"
             :disabled="disconnecting"
             @click="disconnectModal = true"
           >
             {{ disconnecting ? 'Desconectando...' : 'Desconectar conta' }}
-          </AppButton>
+          </button>
         </div>
 
         <p v-if="actionError" class="mt-3 text-sm" style="color: var(--color-danger);">{{ actionError }}</p>
