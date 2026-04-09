@@ -27,7 +27,7 @@ WORKDIR /app
 COPY --from=builder /schedule-api .
 
 # Migrations
-COPY --from=builder /root/go/bin/migrate /usr/local/bin/migrate
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 COPY migrations/ ./migrations/
 
 # Uploads directory
