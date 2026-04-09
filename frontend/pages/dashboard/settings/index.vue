@@ -1,16 +1,5 @@
 <template>
   <div class="ds-page">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <p class="ds-kicker">Marca e integracoes</p>
-        <h1 class="ds-title mt-2">Configuracoes do estabelecimento</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
-          Ajuste dados do negocio, a aparencia da pagina publica e a integracao com o Google Agenda.
-        </p>
-      </div>
-
-    </div>
-
     <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">
       Carregando...
     </div>
@@ -79,11 +68,11 @@
               <div class="xl:col-span-8">
                 <label class="ds-label">Slug (identificador da URL)</label>
                 <div class="flex items-center gap-2">
-                  <span class="text-sm" style="color: var(--color-text-soft);">/p/</span>
+                  <span class="text-sm" style="color: var(--color-text-soft);">/page/</span>
                   <input v-model="estForm.slug" type="text" required class="ds-input flex-1" />
                 </div>
                 <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">
-                  Link publico: /p/{{ estForm.slug }}
+                  Link publico: /page/{{ estForm.slug }}
                 </p>
               </div>
 
@@ -100,7 +89,15 @@
               </div>
               <div class="lg:max-w-sm">
                 <label class="ds-label">Telefone de contato</label>
-                <input v-model="estForm.contact_phone" type="tel" class="ds-input" />
+                <input
+                  :value="estForm.contact_phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  class="ds-input"
+                  placeholder="(11) 99999-9999"
+                  @input="onContactPhoneInput"
+                />
               </div>
             </div>
 
@@ -224,7 +221,7 @@ const estForm = reactive({
   slug: establishment.value?.slug ?? '',
   timezone: establishment.value?.timezone ?? 'America/Sao_Paulo',
   contact_email: establishment.value?.contact_email ?? '',
-  contact_phone: establishment.value?.contact_phone ?? '',
+  contact_phone: formatBrazilianPhoneInput(establishment.value?.contact_phone ?? ''),
   min_advance_cancel_hours: establishment.value?.min_advance_cancel_hours ?? 0,
 })
 
@@ -274,7 +271,7 @@ async function saveEstablishment() {
     await updateEstablishment({
       ...estForm,
       contact_email: estForm.contact_email || null,
-      contact_phone: estForm.contact_phone || null,
+      contact_phone: normalizeBrazilianPhone(estForm.contact_phone) || null,
     })
     estSuccess.value = true
     setTimeout(() => {
@@ -285,6 +282,11 @@ async function saveEstablishment() {
   } finally {
     estSaving.value = false
   }
+}
+
+function onContactPhoneInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  estForm.contact_phone = formatBrazilianPhoneInput(input.value)
 }
 
 async function saveWhitelabel() {

@@ -17,6 +17,8 @@ type Repository interface {
 	GetToken(ctx context.Context, establishmentID string) (*OAuthToken, error)
 	DeleteToken(ctx context.Context, establishmentID string) error
 	UpdateCalendarID(ctx context.Context, professionalID, calendarID string) error
+	GetProfessionalCalendarID(ctx context.Context, establishmentID, professionalID string) (string, error)
+	GetServiceName(ctx context.Context, serviceID, establishmentID string) (string, error)
 	ListProfessionals(ctx context.Context, establishmentID string) ([]ProfessionalRef, error)
 	SetGoogleCalendarConnected(ctx context.Context, establishmentID string, connected bool) error
 }
@@ -123,6 +125,43 @@ func (r *repository) UpdateCalendarID(ctx context.Context, professionalID, calen
 		calendarID, time.Now().UTC(), professionalID,
 	)
 	return err
+}
+
+func (r *repository) GetProfessionalCalendarID(ctx context.Context, establishmentID, professionalID string) (string, error) {
+	var calendarID sql.NullString
+	err := r.db.GetContext(ctx, &calendarID,
+		`SELECT google_calendar_id
+		 FROM professionals
+		 WHERE id = ? AND establishment_id = ? AND active = true`,
+		professionalID, establishmentID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", shared.ErrNotFound
+		}
+		return "", err
+	}
+	if !calendarID.Valid {
+		return "", shared.ErrNotFound
+	}
+	return calendarID.String, nil
+}
+
+func (r *repository) GetServiceName(ctx context.Context, serviceID, establishmentID string) (string, error) {
+	var name string
+	err := r.db.GetContext(ctx, &name,
+		`SELECT name
+		 FROM services
+		 WHERE id = ? AND establishment_id = ? AND active = true`,
+		serviceID, establishmentID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", shared.ErrNotFound
+		}
+		return "", err
+	}
+	return name, nil
 }
 
 // ListProfessionals retorna a lista de profissionais ativos de um estabelecimento

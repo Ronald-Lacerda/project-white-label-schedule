@@ -53,7 +53,7 @@
             <div>
               <label for="slug" class="ds-label">Slug da URL</label>
               <div class="flex items-center gap-2">
-                <span class="text-sm" style="color: var(--color-text-soft);">/p/</span>
+                <span class="text-sm" style="color: var(--color-text-soft);">/page/</span>
                 <input
                   id="slug"
                   v-model="form.slug"
@@ -63,7 +63,7 @@
                   placeholder="meu-estabelecimento"
                 />
               </div>
-              <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Link publico: /p/{{ slugPreview }}</p>
+              <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Link publico: /page/{{ slugPreview }}</p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -84,11 +84,13 @@
                 <label for="contact_phone" class="ds-label">Telefone</label>
                 <input
                   id="contact_phone"
-                  v-model="form.contact_phone"
                   type="tel"
+                  :value="form.contact_phone"
+                  inputmode="tel"
                   autocomplete="tel"
                   class="ds-input"
                   placeholder="(11) 99999-9999"
+                  @input="onContactPhoneInput"
                 />
               </div>
             </div>
@@ -188,7 +190,7 @@ async function handleRegister() {
       email: form.email,
       password: form.password,
       slug: form.slug,
-      contact_phone: form.contact_phone || null,
+      contact_phone: normalizeBrazilianPhone(form.contact_phone) || null,
     })
     await router.push('/dashboard/settings')
   } catch (e: any) {
@@ -219,5 +221,10 @@ function slugify(value: string) {
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+function onContactPhoneInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  form.contact_phone = formatBrazilianPhoneInput(input.value)
 }
 </script>

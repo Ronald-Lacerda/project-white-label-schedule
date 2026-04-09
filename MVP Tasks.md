@@ -74,7 +74,7 @@
 - [x] Implementar `PUT /api/v1/whitelabel` - atualiza logo e cores
 - [x] Middleware de tenant para API publica: resolve `establishment_id` a partir do slug na URL
 - [x] Validacao de slug unico ao criar/atualizar
-- [ ] Upload de logo (armazenamento local ou S3-compatible)
+- [x] Upload de logo (armazenamento local ou S3-compatible)
 
 ### 3.2 Frontend - Painel
 - [x] Pagina `/dashboard/settings` - formulario de dados do estabelecimento
@@ -137,12 +137,12 @@
 - [x] Implementar `DELETE /api/v1/google/disconnect` - revoga acesso e remove tokens
 - [x] Criar `pkg/gcal/` - wrapper da Google Calendar API (criar evento, deletar evento, listar eventos)
 - [x] Ao conectar Google: criar automaticamente uma agenda por profissional ativo
-- [ ] Ao criar profissional apos conexao: criar agenda no Google automaticamente
+- [x] Ao criar profissional apos conexao: criar agenda no Google automaticamente
 - [ ] Job assincrono (Redis queue): criar evento ao confirmar agendamento
 - [ ] Job assincrono: deletar/atualizar evento ao cancelar agendamento
 - [ ] Renovacao automatica de access token (job periodico a cada 50 minutos)
 - [ ] Implementar endpoint de webhook do Google para invalidar cache ao detectar mudanca externa
-- [ ] Armazenar `google_event_id` no agendamento apos sync bem-sucedido
+- [x] Armazenar `google_event_id` no agendamento apos sync bem-sucedido
 
 ### 7.2 Frontend - Painel
 - [x] Pagina/secao `/dashboard/settings/google` - botao "Conectar Google Agenda"
@@ -159,7 +159,7 @@
 - [x] Logica de divisao da janela de trabalho em slots
 - [x] Subtracao de agendamentos confirmados
 - [x] Subtracao de bloqueios manuais
-- [ ] Subtracao de eventos do Google Agenda (quando conectado)
+- [x] Subtracao de eventos do Google Agenda (quando conectado)
 - [x] Suporte a "qualquer profissional disponivel" com execucao paralela via goroutines
 - [x] Cache de disponibilidade no Redis (TTL 30s por profissional/dia)
 - [ ] Invalidacao de cache ao criar/cancelar agendamento ou bloqueio
@@ -243,15 +243,15 @@
 
 | Fase | Tarefas | Concluidas |
 |---|---|---|
-| 1 - Scaffolding | 22 | 21 |
-| 2 - Autenticacao | 8 | 8 |
-| 3 - Estabelecimento e Whitelabel | 10 | 7 |
+| 1 - Scaffolding | 31 | 31 |
+| 2 - Autenticacao | 9 | 9 |
+| 3 - Estabelecimento e Whitelabel | 10 | 8 |
 | 4 - Horarios de Funcionamento | 4 | 4 |
-| 5 - Profissionais | 11 | 9 |
-| 6 - Servicos | 6 | 6 |
-| 7 - Google Agenda | 15 | 9 |
-| 8 - Motor de Disponibilidade | 10 | 8 |
-| 9 - Agendamento Publico | 23 | 21 |
+| 5 - Profissionais | 11 | 10 |
+| 6 - Servicos | 7 | 7 |
+| 7 - Google Agenda | 15 | 11 |
+| 8 - Motor de Disponibilidade | 10 | 9 |
+| 9 - Agendamento Publico | 24 | 21 |
 | 10 - Gestao de Agendamentos | 11 | 11 |
 | 11 - Qualidade e Deploy | 12 | 2 |
-| **Total** | **132** | **106** |
+| **Total** | **144** | **123** |

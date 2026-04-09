@@ -55,6 +55,7 @@ type Repository interface {
 	// GetServiceDuration retorna a duração em minutos do serviço.
 	// Retorna ErrNotFound se o serviço não pertencer ao estabelecimento.
 	GetServiceDuration(ctx context.Context, serviceID, establishmentID string) (int, error)
+	GetServiceName(ctx context.Context, serviceID, establishmentID string) (string, error)
 
 	GetEstablishmentTimezone(ctx context.Context, establishmentID string) (string, error)
 	GetMinAdvanceCancelHours(ctx context.Context, establishmentID string) (int, error)
@@ -62,6 +63,7 @@ type Repository interface {
 	FindAppointmentByIdempotencyKey(ctx context.Context, establishmentID, idempotencyKey string) (*Appointment, error)
 	FindAppointmentByIDAndPhone(ctx context.Context, establishmentID, appointmentID, phone string) (*Appointment, error)
 	CreateAppointment(ctx context.Context, input CreateAppointmentInput, endsAt time.Time) (*Appointment, error)
+	SetAppointmentGoogleEventID(ctx context.Context, establishmentID, appointmentID string, googleEventID *string) error
 	CancelAppointment(ctx context.Context, establishmentID, appointmentID string) (*Appointment, error)
 	RescheduleAppointment(ctx context.Context, current *Appointment, input CreateAppointmentInput, endsAt time.Time) (*Appointment, error)
 
@@ -69,7 +71,7 @@ type Repository interface {
 	ListManagerAppointments(ctx context.Context, establishmentID string, filter AppointmentFilter) ([]ManagerAppointmentRow, int, error)
 	GetManagerAppointment(ctx context.Context, establishmentID, appointmentID string) (*ManagerAppointmentRow, error)
 	UpdateAppointmentStatus(ctx context.Context, input UpdateStatusInput) (*ManagerAppointmentRow, error)
-	ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, date string) ([]ManagerBlockedPeriod, error)
+	ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, dateFrom, dateTo string) ([]ManagerBlockedPeriod, error)
 	CreateBlockedPeriod(ctx context.Context, input CreateBlockedPeriodInput) (*ManagerBlockedPeriod, error)
 	DeleteBlockedPeriod(ctx context.Context, establishmentID, blockedPeriodID string) error
 }
@@ -182,6 +184,25 @@ func (r *repository) GetServiceDuration(ctx context.Context, serviceID, establis
 		return 0, err
 	}
 	return duration, nil
+}
+
+func (r *repository) GetServiceName(ctx context.Context, serviceID, establishmentID string) (string, error) {
+	var name string
+	err := r.db.GetContext(ctx, &name,
+		`SELECT name
+		   FROM services
+		  WHERE id = ?
+		    AND establishment_id = ?
+		    AND active = true`,
+		serviceID, establishmentID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", shared.ErrNotFound
+		}
+		return "", err
+	}
+	return name, nil
 }
 
 func (r *repository) GetEstablishmentTimezone(ctx context.Context, establishmentID string) (string, error) {
@@ -403,6 +424,17 @@ func (r *repository) CancelAppointment(ctx context.Context, establishmentID, app
 	return &appt, nil
 }
 
+func (r *repository) SetAppointmentGoogleEventID(ctx context.Context, establishmentID, appointmentID string, googleEventID *string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE appointments
+		   SET google_event_id = ?, updated_at = ?
+		 WHERE establishment_id = ?
+		   AND id = ?`,
+		googleEventID, time.Now().UTC(), establishmentID, appointmentID,
+	)
+	return err
+}
+
 func (r *repository) RescheduleAppointment(ctx context.Context, current *Appointment, input CreateAppointmentInput, endsAt time.Time) (*Appointment, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -521,9 +553,15 @@ func (r *repository) ListManagerAppointments(ctx context.Context, establishmentI
 	where := " WHERE a.establishment_id = ?"
 	args := []any{establishmentID}
 
-	if filter.Date != "" {
+	if filter.DateFrom != "" && filter.DateTo != "" {
+		where += " AND DATE(CONVERT_TZ(a.starts_at, '+00:00', '+00:00')) BETWEEN ? AND ?"
+		args = append(args, filter.DateFrom, filter.DateTo)
+	} else if filter.DateFrom != "" {
 		where += " AND DATE(CONVERT_TZ(a.starts_at, '+00:00', '+00:00')) = ?"
-		args = append(args, filter.Date)
+		args = append(args, filter.DateFrom)
+	} else if filter.DateTo != "" {
+		where += " AND DATE(CONVERT_TZ(a.starts_at, '+00:00', '+00:00')) = ?"
+		args = append(args, filter.DateTo)
 	}
 	if filter.ProfessionalID != "" {
 		where += " AND a.professional_id = ?"
@@ -595,7 +633,7 @@ func (r *repository) UpdateAppointmentStatus(ctx context.Context, input UpdateSt
 	return r.GetManagerAppointment(ctx, input.EstablishmentID, input.AppointmentID)
 }
 
-func (r *repository) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, date string) ([]ManagerBlockedPeriod, error) {
+func (r *repository) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, dateFrom, dateTo string) ([]ManagerBlockedPeriod, error) {
 	where := " WHERE p.establishment_id = ?"
 	args := []any{establishmentID}
 
@@ -603,9 +641,15 @@ func (r *repository) ListManagerBlockedPeriods(ctx context.Context, establishmen
 		where += " AND bp.professional_id = ?"
 		args = append(args, professionalID)
 	}
-	if date != "" {
-		where += " AND DATE(bp.starts_at) = ?"
-		args = append(args, date)
+	if dateFrom != "" && dateTo != "" {
+		where += " AND DATE(bp.starts_at) BETWEEN ? AND ?"
+		args = append(args, dateFrom, dateTo)
+	} else if dateFrom != "" {
+		where += " AND DATE(bp.starts_at) >= ?"
+		args = append(args, dateFrom)
+	} else if dateTo != "" {
+		where += " AND DATE(bp.starts_at) <= ?"
+		args = append(args, dateTo)
 	}
 
 	query := `

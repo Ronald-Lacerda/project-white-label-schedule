@@ -27,7 +27,8 @@ export interface ManagerBlockedPeriod {
 }
 
 export interface AppointmentFilters {
-  date?: string
+  date_from?: string
+  date_to?: string
   professional_id?: string
   status?: string
   page?: number
@@ -47,10 +48,6 @@ export interface BlockedPeriodInput {
   reason?: string
 }
 
-interface ListResponse<T> {
-  data: T[]
-  meta: AppointmentsMeta
-}
 
 export function useAppointments() {
   const api = useApi()
@@ -63,7 +60,8 @@ export function useAppointments() {
 
   function buildQuery(filters: AppointmentFilters): string {
     const params = new URLSearchParams()
-    if (filters.date) params.set('date', filters.date)
+    if (filters.date_from) params.set('date_from', filters.date_from)
+    if (filters.date_to) params.set('date_to', filters.date_to)
     if (filters.professional_id) params.set('professional_id', filters.professional_id)
     if (filters.status) params.set('status', filters.status)
     if (filters.page) params.set('page', String(filters.page))
@@ -76,7 +74,7 @@ export function useAppointments() {
     loading.value = true
     error.value = ''
     try {
-      const response = await api.get<ListResponse<ManagerAppointment>>(`/api/v1/appointments${buildQuery(filters)}`)
+      const response = await api.list<ManagerAppointment>(`/api/v1/appointments${buildQuery(filters)}`)
       appointments.value = response.data ?? []
       meta.value = response.meta ?? { page: 1, per_page: 20, total: 0 }
     } catch {
@@ -98,13 +96,14 @@ export function useAppointments() {
     return updated
   }
 
-  async function fetchBlockedPeriods(professionalId?: string, date?: string) {
+  async function fetchBlockedPeriods(professionalId?: string, dateFrom?: string, dateTo?: string) {
     const params = new URLSearchParams()
     if (professionalId) params.set('professional_id', professionalId)
-    if (date) params.set('date', date)
+    if (dateFrom) params.set('date_from', dateFrom)
+    if (dateTo) params.set('date_to', dateTo)
     const qs = params.toString()
     const path = `/api/v1/blocked-periods${qs ? `?${qs}` : ''}`
-    blockedPeriods.value = await api.get<ManagerBlockedPeriod[]>(path)
+    blockedPeriods.value = (await api.get<ManagerBlockedPeriod[]>(path)) ?? []
   }
 
   async function createBlockedPeriod(input: BlockedPeriodInput): Promise<ManagerBlockedPeriod> {

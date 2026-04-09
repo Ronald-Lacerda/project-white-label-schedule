@@ -4,7 +4,8 @@ import "time"
 
 // AppointmentFilter agrupa os filtros opcionais para listagem de agendamentos pelo gestor.
 type AppointmentFilter struct {
-	Date           string // YYYY-MM-DD, opcional
+	DateFrom       string // YYYY-MM-DD, opcional — início do intervalo
+	DateTo         string // YYYY-MM-DD, opcional — fim do intervalo (inclusivo)
 	ProfessionalID string // opcional
 	Status         string // opcional: confirmed, completed, no_show, cancelled
 	Page           int

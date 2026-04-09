@@ -43,6 +43,28 @@ export function useApi() {
     return request<T>(path)
   }
 
+  async function list<T>(path: string): Promise<{ data: T[]; meta: { page: number; per_page: number; total: number } }> {
+    const url = `${config.public.apiBaseUrl}${path}`
+    const makeRequest = () =>
+      $fetch.raw<{ data: T[]; meta: { page: number; per_page: number; total: number } }>(url, {
+        timeout: defaultTimeoutMs,
+        headers: auth.authHeaders(),
+      })
+    try {
+      const res = await makeRequest()
+      return res._data!
+    } catch (error: any) {
+      if (error?.status === 401) {
+        const restored = await auth.refresh()
+        if (restored) {
+          const res = await makeRequest()
+          return res._data!
+        }
+      }
+      throw error
+    }
+  }
+
   async function post<T>(path: string, body: unknown): Promise<T> {
     return request<T>(path, {
       method: 'POST',
@@ -89,5 +111,5 @@ export function useApi() {
     }
   }
 
-  return { get, post, put, patch, del }
+  return { get, list, post, put, patch, del }
 }

@@ -331,7 +331,8 @@ func (h *Handler) ListManagerAppointments(w http.ResponseWriter, r *http.Request
 	}
 
 	filter := AppointmentFilter{
-		Date:           q.Get("date"),
+		DateFrom:       q.Get("date_from"),
+		DateTo:         q.Get("date_to"),
 		ProfessionalID: q.Get("professional_id"),
 		Status:         q.Get("status"),
 		Page:           page,
@@ -400,7 +401,7 @@ func (h *Handler) ListManagerBlockedPeriods(w http.ResponseWriter, r *http.Reque
 	establishmentID := shared.EstablishmentIDFromContext(ctx)
 	q := r.URL.Query()
 
-	periods, err := h.svc.ListManagerBlockedPeriods(ctx, establishmentID, q.Get("professional_id"), q.Get("date"))
+	periods, err := h.svc.ListManagerBlockedPeriods(ctx, establishmentID, q.Get("professional_id"), q.Get("date_from"), q.Get("date_to"))
 	if err != nil {
 		shared.JSONError(w, err)
 		return

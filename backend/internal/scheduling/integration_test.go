@@ -136,7 +136,7 @@ func newSchedulingIntegrationFixture(t *testing.T) *schedulingIntegrationFixture
 
 func (f *schedulingIntegrationFixture) buildRouter() http.Handler {
 	repo := NewRepository(f.db)
-	svc := NewService(repo, f.redis)
+	svc := NewService(repo, f.redis, nil)
 	handler := NewHandler(svc)
 
 	resolver := func(ctx context.Context, slug string) (string, error) {

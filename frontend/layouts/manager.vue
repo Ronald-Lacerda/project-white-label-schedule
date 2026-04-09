@@ -51,27 +51,6 @@
       </aside>
 
       <div class="min-w-0 flex-1">
-        <header class="ds-surface ds-panel">
-          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div class="space-y-2">
-              <p class="ds-kicker">{{ currentSection.label }}</p>
-              <div>
-                <h2 class="text-2xl font-semibold tracking-tight" style="color: var(--color-text);">{{ currentSection.heading }}</h2>
-                <p class="mt-2 max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
-                  {{ currentSection.description }}
-                </p>
-              </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-              <AppStatusPill tone="info">Painel do gestor</AppStatusPill>
-              <div class="hidden rounded-full border px-4 py-2 text-sm font-medium md:block" style="border-color: var(--color-border); color: var(--color-text-muted);">
-                {{ auth.user.value?.name || 'Gestor' }}
-              </div>
-            </div>
-          </div>
-        </header>
-
         <nav class="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
           <NuxtLink
             v-for="item in navItems"
@@ -108,32 +87,6 @@ const navItems = [
   { to: '/dashboard/hours', label: 'Horarios', heading: 'Disponibilidade base', hint: 'Jornada da casa' },
   { to: '/dashboard/settings', label: 'Configuracoes', heading: 'Marca e integracoes', hint: 'Whitelabel e Google' },
 ]
-
-const currentSection = computed(() => {
-  const active = [...navItems].reverse().find(item => route.path.startsWith(item.to))
-
-  if (!active) {
-    return {
-      label: 'Manager workspace',
-      heading: 'Painel de gestao',
-      description: 'Organize agenda, profissionais, marca e disponibilidade com clareza operacional.',
-    }
-  }
-
-  return {
-    label: active.label,
-    heading: active.heading,
-    description: active.to === '/dashboard/appointments'
-      ? 'Acompanhe a operacao em tempo real, filtre ruido e aja rapido em conflitos ou bloqueios.'
-      : active.to === '/dashboard/settings'
-        ? 'Gerencie os dados do estabelecimento, a identidade visual do link publico e a conexao com o Google Agenda.'
-        : active.to === '/dashboard/hours'
-          ? 'Os horarios definidos aqui alimentam o motor de disponibilidade e ajudam a reduzir conflitos.'
-          : active.to === '/dashboard'
-            ? 'Visibilidade rapida do dia para que o gestor encontre o que importa sem esforco.'
-            : 'Mantenha a operacao organizada com componentes consistentes e leitura rapida.',
-  }
-})
 
 const userInitials = computed(() => (auth.user.value?.name || 'G').trim().slice(0, 2).toUpperCase())
 const activeMobileStyle = {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -17,45 +18,56 @@ const (
 	cacheTTL       = 30 * time.Second
 )
 
-// AvailabilityOptions agrupa os parâmetros necessários para calcular disponibilidade.
+// AvailabilityOptions agrupa os parametros necessarios para calcular disponibilidade.
 type AvailabilityOptions struct {
 	EstablishmentID string
 	ServiceID       string
-	ProfessionalID  string // opcional — vazio = qualquer profissional
+	ProfessionalID  string
 	DateFrom        time.Time
 	DateTo          time.Time
 	Timezone        string
 }
 
 // Service orquestra a busca de disponibilidade, cache Redis e paralelismo.
+type ExternalBusyProvider interface {
+	ListBusyPeriods(ctx context.Context, establishmentID, professionalID string, from, to time.Time) ([]Period, error)
+}
+
+type AppointmentEventSyncer interface {
+	CreateAppointmentEvent(ctx context.Context, appointment *Appointment) (string, error)
+	DeleteAppointmentEvent(ctx context.Context, appointment *Appointment) error
+}
+
 type Service struct {
-	repo  Repository
-	redis *redis.Client
+	repo         Repository
+	redis        *redis.Client
+	busyProvider ExternalBusyProvider
+	eventSyncer  AppointmentEventSyncer
 }
 
-// NewService cria um novo Service com injeção de dependências.
-func NewService(repo Repository, rdb *redis.Client) *Service {
-	return &Service{repo: repo, redis: rdb}
+// NewService cria um novo Service com injecao de dependencias.
+func NewService(repo Repository, rdb *redis.Client, busyProvider ExternalBusyProvider) *Service {
+	svc := &Service{repo: repo, redis: rdb, busyProvider: busyProvider}
+	if syncer, ok := any(busyProvider).(AppointmentEventSyncer); ok {
+		svc.eventSyncer = syncer
+	}
+	return svc
 }
 
-// GetAvailability retorna os slots disponíveis agrupados por profissional.
+// GetAvailability retorna os slots disponiveis agrupados por profissional.
 // Se opts.ProfessionalID for vazio, busca todos os profissionais ativos em paralelo.
 func (s *Service) GetAvailability(ctx context.Context, opts AvailabilityOptions) (map[string][]Slot, error) {
-	// Busca duração do serviço (obrigatório).
 	duration, err := s.repo.GetServiceDuration(ctx, opts.ServiceID, opts.EstablishmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Busca horários de funcionamento do estabelecimento (compartilhado por todos os profissionais).
 	bizHours, err := s.repo.GetBusinessHours(ctx, opts.EstablishmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Determina a lista de profissionais a processar.
 	var professionals []ProfessionalRef
-
 	if opts.ProfessionalID != "" {
 		professionals = []ProfessionalRef{{ID: opts.ProfessionalID}}
 	} else {
@@ -69,7 +81,6 @@ func (s *Service) GetAvailability(ctx context.Context, opts AvailabilityOptions)
 		return map[string][]Slot{}, nil
 	}
 
-	// Executa a busca em paralelo para cada profissional.
 	type result struct {
 		professionalID string
 		slots          []Slot
@@ -83,19 +94,16 @@ func (s *Service) GetAvailability(ctx context.Context, opts AvailabilityOptions)
 		wg.Add(1)
 		go func(profID string) {
 			defer wg.Done()
-
 			slots, err := s.getSlotsForProfessional(ctx, profID, bizHours, duration, opts)
 			results <- result{professionalID: profID, slots: slots, err: err}
 		}(prof.ID)
 	}
 
-	// Fecha o canal depois que todas as goroutines terminarem.
 	go func() {
 		wg.Wait()
 		close(results)
 	}()
 
-	// Coleta resultados, acumulando o primeiro erro encontrado.
 	out := make(map[string][]Slot, len(professionals))
 	var firstErr error
 
@@ -116,8 +124,6 @@ func (s *Service) GetAvailability(ctx context.Context, opts AvailabilityOptions)
 	return out, nil
 }
 
-// getSlotsForProfessional calcula os slots para um único profissional,
-// respeitando o cache Redis por dia.
 func (s *Service) getSlotsForProfessional(
 	ctx context.Context,
 	professionalID string,
@@ -125,7 +131,6 @@ func (s *Service) getSlotsForProfessional(
 	durationMinutes int,
 	opts AvailabilityOptions,
 ) ([]Slot, error) {
-	// Busca dados do profissional (jornada, agendamentos, bloqueios) uma única vez.
 	profHours, err := s.repo.GetProfessionalHours(ctx, professionalID)
 	if err != nil {
 		return nil, err
@@ -141,11 +146,13 @@ func (s *Service) getSlotsForProfessional(
 		return nil, err
 	}
 
-	// Tenta cache Redis dia a dia.
-	// Se todos os dias derem hit, retorna do cache; caso contrário, recalcula tudo e popula.
+	externalBusy, err := s.getExternalBusy(ctx, opts.EstablishmentID, professionalID, opts.DateFrom, opts.DateTo)
+	if err != nil {
+		return nil, err
+	}
+
 	var allSlots []Slot
 
-	// Itera dia a dia para granularidade de cache por data.
 	loc, err := time.LoadLocation(opts.Timezone)
 	if err != nil {
 		loc = time.UTC
@@ -158,19 +165,18 @@ func (s *Service) getSlotsForProfessional(
 		dateStr := current.In(loc).Format("2006-01-02")
 		cacheKey := buildCacheKey(opts.EstablishmentID, professionalID, dateStr)
 
-		cached, err := s.redis.Get(ctx, cacheKey).Bytes()
-		if err == nil {
-			// Cache hit: desserializa e adiciona ao resultado.
-			var daySlots []Slot
-			if jsonErr := json.Unmarshal(cached, &daySlots); jsonErr == nil {
-				allSlots = append(allSlots, daySlots...)
-				current = current.Add(24 * time.Hour)
-				continue
+		if s.redis != nil {
+			cached, err := s.redis.Get(ctx, cacheKey).Bytes()
+			if err == nil {
+				var daySlots []Slot
+				if jsonErr := json.Unmarshal(cached, &daySlots); jsonErr == nil {
+					allSlots = append(allSlots, daySlots...)
+					current = current.Add(24 * time.Hour)
+					continue
+				}
 			}
-			// Se desserialização falhar, recalcula para este dia.
 		}
 
-		// Cache miss: calcula slots apenas para este dia.
 		dayFrom := current
 		dayTo := current.Add(24 * time.Hour)
 
@@ -179,7 +185,7 @@ func (s *Service) getSlotsForProfessional(
 			profHours,
 			appointments,
 			blockedPeriods,
-			nil, // externalBusy: Google Calendar integrado na Fase seguinte
+			externalBusy,
 			durationMinutes,
 			dayFrom,
 			dayTo,
@@ -187,9 +193,10 @@ func (s *Service) getSlotsForProfessional(
 			professionalID,
 		)
 
-		// Serializa e armazena no cache (ignora erros de cache — não bloqueante).
-		if data, jsonErr := json.Marshal(daySlots); jsonErr == nil {
-			_ = s.redis.Set(ctx, cacheKey, data, cacheTTL).Err()
+		if s.redis != nil {
+			if data, jsonErr := json.Marshal(daySlots); jsonErr == nil {
+				_ = s.redis.Set(ctx, cacheKey, data, cacheTTL).Err()
+			}
 		}
 
 		allSlots = append(allSlots, daySlots...)
@@ -199,11 +206,11 @@ func (s *Service) getSlotsForProfessional(
 	return allSlots, nil
 }
 
-// InvalidateCache remove as chaves de disponibilidade afetadas no Redis para
-// o profissional e data fornecidos. O timezone deve corresponder ao fuso do
-// estabelecimento para que a chave gerada bata com as chaves armazenadas.
-// Deve ser chamada ao criar ou cancelar agendamentos.
+// InvalidateCache remove as chaves de disponibilidade afetadas no Redis.
 func (s *Service) InvalidateCache(ctx context.Context, establishmentID, professionalID, timezone string, date time.Time) error {
+	if s.redis == nil {
+		return nil
+	}
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		loc = time.UTC
@@ -213,8 +220,17 @@ func (s *Service) InvalidateCache(ctx context.Context, establishmentID, professi
 	return s.redis.Del(ctx, cacheKey).Err()
 }
 
-// buildCacheKey constrói a chave Redis no formato:
-// availability:{establishmentID}:{professionalID}:{date}
+func (s *Service) getExternalBusy(ctx context.Context, establishmentID, professionalID string, from, to time.Time) ([]Period, error) {
+	if s.busyProvider == nil {
+		return nil, nil
+	}
+	periods, err := s.busyProvider.ListBusyPeriods(ctx, establishmentID, professionalID, from, to)
+	if err == shared.ErrIntegrationNotConfigured {
+		return nil, nil
+	}
+	return periods, err
+}
+
 func buildCacheKey(establishmentID, professionalID, date string) string {
 	return fmt.Sprintf("%s:%s:%s:%s", cacheKeyPrefix, establishmentID, professionalID, date)
 }
@@ -271,13 +287,17 @@ func (s *Service) CreatePublicAppointment(ctx context.Context, input CreateAppoi
 	if err != nil {
 		return nil, err
 	}
+	externalBusy, err := s.getExternalBusy(ctx, input.EstablishmentID, input.ProfessionalID, dayStart, dayEnd)
+	if err != nil {
+		return nil, err
+	}
 
 	slots := CalculateSlots(
 		bizHours,
 		profHours,
 		appointments,
 		blockedPeriods,
-		nil,
+		externalBusy,
 		duration,
 		dayStart,
 		dayEnd,
@@ -301,6 +321,7 @@ func (s *Service) CreatePublicAppointment(ctx context.Context, input CreateAppoi
 		return nil, err
 	}
 
+	s.syncAppointmentCreate(ctx, appointment)
 	_ = s.InvalidateCache(ctx, input.EstablishmentID, input.ProfessionalID, timezone, input.StartsAt)
 
 	return toPublicAppointmentResult(appointment), nil
@@ -382,6 +403,7 @@ func (s *Service) CancelPublicAppointment(ctx context.Context, establishmentID, 
 	if tzErr == nil {
 		_ = s.InvalidateCache(ctx, establishmentID, cancelled.ProfessionalID, timezone, cancelled.StartsAt)
 	}
+	s.syncAppointmentDelete(ctx, cancelled)
 
 	return toPublicAppointmentDetail(cancelled, minAdvanceCancelHours), nil
 }
@@ -459,13 +481,17 @@ func (s *Service) ReschedulePublicAppointment(ctx context.Context, establishment
 	if err != nil {
 		return nil, err
 	}
+	externalBusy, err := s.getExternalBusy(ctx, input.EstablishmentID, input.ProfessionalID, dayStart, dayEnd)
+	if err != nil {
+		return nil, err
+	}
 
 	slots := CalculateSlots(
 		bizHours,
 		profHours,
 		filteredAppointments,
 		blockedPeriods,
-		nil,
+		externalBusy,
 		duration,
 		dayStart,
 		dayEnd,
@@ -489,6 +515,8 @@ func (s *Service) ReschedulePublicAppointment(ctx context.Context, establishment
 		return nil, err
 	}
 
+	s.syncAppointmentDelete(ctx, current)
+	s.syncAppointmentCreate(ctx, newAppointment)
 	_ = s.InvalidateCache(ctx, establishmentID, current.ProfessionalID, timezone, current.StartsAt)
 	_ = s.InvalidateCache(ctx, establishmentID, newAppointment.ProfessionalID, timezone, newAppointment.StartsAt)
 
@@ -527,7 +555,40 @@ func derefString(value *string) string {
 	return *value
 }
 
-// ── Métodos do gestor (Fase 10) ────────────────────────────────────────────
+func (s *Service) syncAppointmentCreate(ctx context.Context, appointment *Appointment) {
+	if s.eventSyncer == nil || appointment == nil {
+		return
+	}
+
+	eventID, err := s.eventSyncer.CreateAppointmentEvent(ctx, appointment)
+	if err != nil {
+		log.Printf("scheduling: failed to sync appointment %s to Google Calendar: %v", appointment.ID, err)
+		return
+	}
+	if eventID == "" {
+		return
+	}
+
+	appointment.GoogleEventID = &eventID
+	if err := s.repo.SetAppointmentGoogleEventID(ctx, appointment.EstablishmentID, appointment.ID, &eventID); err != nil {
+		log.Printf("scheduling: failed to persist google_event_id for appointment %s: %v", appointment.ID, err)
+	}
+}
+
+func (s *Service) syncAppointmentDelete(ctx context.Context, appointment *Appointment) {
+	if s.eventSyncer == nil || appointment == nil || appointment.GoogleEventID == nil || *appointment.GoogleEventID == "" {
+		return
+	}
+
+	if err := s.eventSyncer.DeleteAppointmentEvent(ctx, appointment); err != nil {
+		log.Printf("scheduling: failed to delete Google Calendar event for appointment %s: %v", appointment.ID, err)
+		return
+	}
+
+	if err := s.repo.SetAppointmentGoogleEventID(ctx, appointment.EstablishmentID, appointment.ID, nil); err != nil {
+		log.Printf("scheduling: failed to clear google_event_id for appointment %s: %v", appointment.ID, err)
+	}
+}
 
 var validManagerStatuses = map[string]bool{
 	"completed": true,
@@ -550,7 +611,7 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, input UpdateStatu
 	if !validManagerStatuses[input.Status] {
 		return nil, &shared.DomainError{
 			Code:    "INVALID_STATUS",
-			Message: "Status inválido. Use: completed, no_show ou cancelled.",
+			Message: "Status invalido. Use: completed, no_show ou cancelled.",
 			Status:  400,
 		}
 	}
@@ -561,7 +622,7 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, input UpdateStatu
 	if appt.Status == "cancelled" || appt.Status == "completed" || appt.Status == "no_show" {
 		return nil, &shared.DomainError{
 			Code:    "STATUS_ALREADY_TERMINAL",
-			Message: "O agendamento já está em um estado final e não pode ser alterado.",
+			Message: "O agendamento ja esta em um estado final e nao pode ser alterado.",
 			Status:  409,
 		}
 	}
@@ -578,8 +639,8 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, input UpdateStatu
 	return updated, nil
 }
 
-func (s *Service) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, date string) ([]ManagerBlockedPeriod, error) {
-	return s.repo.ListManagerBlockedPeriods(ctx, establishmentID, professionalID, date)
+func (s *Service) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, dateFrom, dateTo string) ([]ManagerBlockedPeriod, error) {
+	return s.repo.ListManagerBlockedPeriods(ctx, establishmentID, professionalID, dateFrom, dateTo)
 }
 
 func (s *Service) CreateBlockedPeriod(ctx context.Context, input CreateBlockedPeriodInput) (*ManagerBlockedPeriod, error) {

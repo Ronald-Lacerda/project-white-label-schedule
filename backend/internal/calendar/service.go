@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"schedule/internal/shared"
+	"schedule/internal/scheduling"
 	"schedule/pkg/gcal"
 )
 
@@ -271,4 +272,145 @@ func (s *Service) RefreshTokenIfNeeded(ctx context.Context, establishmentID stri
 	}
 
 	return updated, nil
+}
+
+// ListBusyPeriods retorna os periodos ocupados do calendario Google de um profissional.
+// Se o estabelecimento nao estiver conectado ou o profissional ainda nao possuir calendario,
+// retorna uma lista vazia para nao bloquear o fluxo publico.
+func (s *Service) ListBusyPeriods(ctx context.Context, establishmentID, professionalID string, from, to time.Time) ([]scheduling.Period, error) {
+	token, err := s.RefreshTokenIfNeeded(ctx, establishmentID)
+	if err != nil {
+		if err == shared.ErrNotFound {
+			return nil, nil
+		}
+		if mapped := mapConfigError(err); mapped == shared.ErrIntegrationNotConfigured {
+			return nil, nil
+		} else if mapped != err {
+			return nil, mapped
+		}
+		return nil, err
+	}
+
+	calendarID, err := s.repo.GetProfessionalCalendarID(ctx, establishmentID, professionalID)
+	if err != nil {
+		if err == shared.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	client, err := gcal.NewClient(ctx, &oauth2.Token{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+	})
+	if err != nil {
+		if mapped := mapConfigError(err); mapped == shared.ErrIntegrationNotConfigured {
+			return nil, nil
+		} else if mapped != err {
+			return nil, mapped
+		}
+		return nil, err
+	}
+
+	periods, err := client.ListBusyPeriods(ctx, calendarID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	busy := make([]scheduling.Period, 0, len(periods))
+	for _, period := range periods {
+		busy = append(busy, scheduling.Period{
+			StartsAt: period.Start.UTC(),
+			EndsAt:   period.End.UTC(),
+		})
+	}
+
+	return busy, nil
+}
+
+func (s *Service) CreateAppointmentEvent(ctx context.Context, appointment *scheduling.Appointment) (string, error) {
+	if appointment == nil {
+		return "", shared.ErrInvalidInput
+	}
+
+	client, calendarID, err := s.appointmentCalendarClient(ctx, appointment.EstablishmentID, appointment.ProfessionalID)
+	if err != nil {
+		return "", err
+	}
+	if client == nil || calendarID == "" {
+		return "", nil
+	}
+
+	title := fmt.Sprintf("Agendamento - %s", appointment.ClientName)
+	notes := fmt.Sprintf("Appointment ID: %s\nTelefone: %s", appointment.ID, appointment.ClientPhone)
+	serviceName, err := s.repo.GetServiceName(ctx, appointment.ServiceID, appointment.EstablishmentID)
+	if err == nil && serviceName != "" {
+		notes += fmt.Sprintf("\nServico: %s", serviceName)
+	}
+	if appointment.ClientEmail != nil && *appointment.ClientEmail != "" {
+		notes += fmt.Sprintf("\nEmail: %s", *appointment.ClientEmail)
+	}
+
+	return client.CreateEvent(ctx, calendarID, gcal.Event{
+		Title:     title,
+		StartTime: appointment.StartsAt,
+		EndTime:   appointment.EndsAt,
+		Notes:     notes,
+	})
+}
+
+func (s *Service) DeleteAppointmentEvent(ctx context.Context, appointment *scheduling.Appointment) error {
+	if appointment == nil || appointment.GoogleEventID == nil || *appointment.GoogleEventID == "" {
+		return nil
+	}
+
+	client, calendarID, err := s.appointmentCalendarClient(ctx, appointment.EstablishmentID, appointment.ProfessionalID)
+	if err != nil {
+		return err
+	}
+	if client == nil || calendarID == "" {
+		return nil
+	}
+
+	return client.DeleteEvent(ctx, calendarID, *appointment.GoogleEventID)
+}
+
+func (s *Service) appointmentCalendarClient(ctx context.Context, establishmentID, professionalID string) (*gcal.Client, string, error) {
+	token, err := s.RefreshTokenIfNeeded(ctx, establishmentID)
+	if err != nil {
+		if err == shared.ErrNotFound {
+			return nil, "", nil
+		}
+		if mapped := mapConfigError(err); mapped == shared.ErrIntegrationNotConfigured {
+			return nil, "", nil
+		} else if mapped != err {
+			return nil, "", mapped
+		}
+		return nil, "", err
+	}
+
+	calendarID, err := s.repo.GetProfessionalCalendarID(ctx, establishmentID, professionalID)
+	if err != nil {
+		if err == shared.ErrNotFound {
+			return nil, "", nil
+		}
+		return nil, "", err
+	}
+
+	client, err := gcal.NewClient(ctx, &oauth2.Token{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+	})
+	if err != nil {
+		if mapped := mapConfigError(err); mapped == shared.ErrIntegrationNotConfigured {
+			return nil, "", nil
+		} else if mapped != err {
+			return nil, "", mapped
+		}
+		return nil, "", err
+	}
+
+	return client, calendarID, nil
 }

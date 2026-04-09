@@ -11,5 +11,5 @@ export function formatLocalDateTimeInputValue(date = new Date()) {
 }
 
 export function localDateTimeToIso(value: string) {
-  return new Date(value).toISOString()
+  return new Date(value).toISOString().replace(/\.\d{3}Z$/, 'Z')
 }

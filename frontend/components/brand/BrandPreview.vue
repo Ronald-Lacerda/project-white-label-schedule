@@ -32,7 +32,7 @@
             <div>
               <p class="text-[0.68rem] font-semibold uppercase tracking-[0.28em]" style="color: var(--color-text-soft);">Link público</p>
               <p class="mt-1.5 text-sm font-semibold break-all" style="color: var(--color-brand-primary);">
-                /p/{{ slug || 'seu-link' }}
+                /page/{{ slug || 'seu-link' }}
               </p>
             </div>
             <span class="ds-chip flex-shrink-0">24/7</span>

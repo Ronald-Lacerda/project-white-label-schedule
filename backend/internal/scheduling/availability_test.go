@@ -320,6 +320,44 @@ func TestCalculateSlots_BloqueioManual(t *testing.T) {
 	}
 }
 
+func TestCalculateSlots_BloqueioGoogleCalendar(t *testing.T) {
+	date := makeDate(2026, time.April, 6)
+	from := date
+	to := date.Add(24 * time.Hour)
+
+	dow := int(date.In(mustLoadLocation(testTimezone)).Weekday())
+
+	biz := bizHoursOpen(dow, "09:00:00", "18:00:00")
+	prof := profHoursAvailable(dow, "09:00:00", "18:00:00")
+
+	externalBusy := []Period{
+		{
+			StartsAt: makeDateTime(2026, time.April, 6, 13, 0),
+			EndsAt:   makeDateTime(2026, time.April, 6, 14, 30),
+		},
+	}
+
+	slots := CalculateSlots(
+		biz, prof,
+		nil, nil, externalBusy,
+		30, from, to,
+		testTimezone, "prof-1",
+	)
+
+	for _, slot := range slots {
+		if overlaps(slot.StartsAt, slot.EndsAt, externalBusy[0].StartsAt, externalBusy[0].EndsAt) {
+			t.Fatalf("slot %v-%v nao deveria estar livre durante evento externo",
+				slot.StartsAt.In(mustLoadLocation(testTimezone)),
+				slot.EndsAt.In(mustLoadLocation(testTimezone)),
+			)
+		}
+	}
+
+	if len(slots) != 15 {
+		t.Errorf("esperava 15 slots apos bloquear 3 periodos de 30 min, got %d", len(slots))
+	}
+}
+
 // ─── Auxiliar ─────────────────────────────────────────────────────────────────
 
 func mustLoadLocation(name string) *time.Location {
