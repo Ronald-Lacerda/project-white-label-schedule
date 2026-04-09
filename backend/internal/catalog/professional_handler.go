@@ -73,25 +73,54 @@ func (h *ProfessionalHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	var req struct {
-		Name         string  `json:"name"`
+		Name         *string `json:"name"`
 		AvatarURL    *string `json:"avatar_url"`
 		Phone        *string `json:"phone"`
-		DisplayOrder int     `json:"display_order"`
+		DisplayOrder *int    `json:"display_order"`
+		Active       *bool   `json:"active"`
 	}
 	if err := shared.Decode(r, &req); err != nil {
 		shared.JSONError(w, err)
 		return
 	}
-	if req.Name == "" {
+
+	if req.Name != nil {
+		if *req.Name == "" {
+			shared.JSONError(w, shared.ErrInvalidInput)
+			return
+		}
+
+		displayOrder := 0
+		if req.DisplayOrder != nil {
+			displayOrder = *req.DisplayOrder
+		}
+
+		p, err := h.svc.Update(r.Context(), id, estID, ProfessionalInput{
+			Name:         *req.Name,
+			AvatarURL:    req.AvatarURL,
+			Phone:        req.Phone,
+			DisplayOrder: displayOrder,
+		})
+		if err != nil {
+			shared.JSONError(w, err)
+			return
+		}
+		shared.JSON(w, http.StatusOK, p)
+		return
+	}
+
+	if req.Active == nil && req.DisplayOrder == nil && req.Phone == nil && req.AvatarURL == nil {
 		shared.JSONError(w, shared.ErrInvalidInput)
 		return
 	}
 
-	p, err := h.svc.Update(r.Context(), id, estID, ProfessionalInput{
-		Name:         req.Name,
-		AvatarURL:    req.AvatarURL,
-		Phone:        req.Phone,
-		DisplayOrder: req.DisplayOrder,
+	p, err := h.svc.Patch(r.Context(), id, estID, ProfessionalPatchInput{
+		AvatarURL:         req.AvatarURL,
+		AvatarURLProvided: req.AvatarURL != nil,
+		Phone:             req.Phone,
+		PhoneProvided:     req.Phone != nil,
+		DisplayOrder:      req.DisplayOrder,
+		Active:            req.Active,
 	})
 	if err != nil {
 		shared.JSONError(w, err)

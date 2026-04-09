@@ -63,27 +63,51 @@ func (h *SvcHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	var req struct {
-		Name            string  `json:"name"`
+		Name            *string `json:"name"`
 		Description     *string `json:"description"`
-		DurationMinutes int     `json:"duration_minutes"`
+		DurationMinutes *int    `json:"duration_minutes"`
 		PriceCents      *int    `json:"price_cents"`
-		DisplayOrder    int     `json:"display_order"`
+		DisplayOrder    *int    `json:"display_order"`
+		Active          *bool   `json:"active"`
 	}
 	if err := shared.Decode(r, &req); err != nil {
 		shared.JSONError(w, err)
 		return
 	}
-	if req.Name == "" || req.DurationMinutes <= 0 {
+
+	if req.Name != nil || req.DurationMinutes != nil || req.Description != nil || req.PriceCents != nil || req.DisplayOrder != nil {
+		if req.Name == nil || *req.Name == "" || req.DurationMinutes == nil || *req.DurationMinutes <= 0 {
+			shared.JSONError(w, shared.ErrInvalidInput)
+			return
+		}
+
+		displayOrder := 0
+		if req.DisplayOrder != nil {
+			displayOrder = *req.DisplayOrder
+		}
+
+		svc, err := h.svc.Update(r.Context(), id, estID, SvcInput{
+			Name:            *req.Name,
+			Description:     req.Description,
+			DurationMinutes: *req.DurationMinutes,
+			PriceCents:      req.PriceCents,
+			DisplayOrder:    displayOrder,
+		})
+		if err != nil {
+			shared.JSONError(w, err)
+			return
+		}
+		shared.JSON(w, http.StatusOK, svc)
+		return
+	}
+
+	if req.Active == nil {
 		shared.JSONError(w, shared.ErrInvalidInput)
 		return
 	}
 
-	svc, err := h.svc.Update(r.Context(), id, estID, SvcInput{
-		Name:            req.Name,
-		Description:     req.Description,
-		DurationMinutes: req.DurationMinutes,
-		PriceCents:      req.PriceCents,
-		DisplayOrder:    req.DisplayOrder,
+	svc, err := h.svc.Patch(r.Context(), id, estID, SvcPatchInput{
+		Active: req.Active,
 	})
 	if err != nil {
 		shared.JSONError(w, err)

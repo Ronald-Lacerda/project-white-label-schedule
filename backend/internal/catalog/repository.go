@@ -34,7 +34,7 @@ func NewProfessionalRepository(db *sqlx.DB) ProfessionalRepository {
 func (r *professionalRepo) List(ctx context.Context, establishmentID string) ([]Professional, error) {
 	var result []Professional
 	err := r.db.SelectContext(ctx, &result,
-		`SELECT * FROM professionals WHERE establishment_id = ? AND active = true ORDER BY display_order, name`,
+		`SELECT * FROM professionals WHERE establishment_id = ? ORDER BY active DESC, display_order, name`,
 		establishmentID,
 	)
 	if err != nil {
@@ -78,9 +78,9 @@ func (r *professionalRepo) Create(ctx context.Context, p *Professional) error {
 
 func (r *professionalRepo) Update(ctx context.Context, p *Professional) error {
 	_, err := r.db.ExecContext(ctx, `
-		UPDATE professionals SET name = ?, avatar_url = ?, phone = ?, display_order = ?, updated_at = ?
+		UPDATE professionals SET name = ?, avatar_url = ?, phone = ?, display_order = ?, active = ?, updated_at = ?
 		WHERE id = ? AND establishment_id = ?`,
-		p.Name, p.AvatarURL, p.Phone, p.DisplayOrder, p.UpdatedAt,
+		p.Name, p.AvatarURL, p.Phone, p.DisplayOrder, p.Active, p.UpdatedAt,
 		p.ID, p.EstablishmentID,
 	)
 	return err
@@ -230,6 +230,7 @@ func uniqueStrings(values []string) []string {
 
 type SvcRepository interface {
 	List(ctx context.Context, establishmentID string) ([]Svc, error)
+	ListActive(ctx context.Context, establishmentID string) ([]Svc, error)
 	FindByID(ctx context.Context, id, establishmentID string) (*Svc, error)
 	Create(ctx context.Context, s *Svc) error
 	Update(ctx context.Context, s *Svc) error
@@ -246,6 +247,15 @@ func (r *svcRepo) List(ctx context.Context, establishmentID string) ([]Svc, erro
 	var result []Svc
 	err := r.db.SelectContext(ctx, &result,
 		`SELECT * FROM services WHERE establishment_id = ? ORDER BY display_order, name`,
+		establishmentID,
+	)
+	return result, err
+}
+
+func (r *svcRepo) ListActive(ctx context.Context, establishmentID string) ([]Svc, error) {
+	var result []Svc
+	err := r.db.SelectContext(ctx, &result,
+		`SELECT * FROM services WHERE establishment_id = ? AND active = true ORDER BY display_order, name`,
 		establishmentID,
 	)
 	return result, err
@@ -278,9 +288,9 @@ func (r *svcRepo) Create(ctx context.Context, s *Svc) error {
 
 func (r *svcRepo) Update(ctx context.Context, s *Svc) error {
 	_, err := r.db.ExecContext(ctx, `
-		UPDATE services SET name = ?, description = ?, duration_minutes = ?, price_cents = ?, display_order = ?
+		UPDATE services SET name = ?, description = ?, duration_minutes = ?, price_cents = ?, active = ?, display_order = ?
 		WHERE id = ? AND establishment_id = ?`,
-		s.Name, s.Description, s.DurationMinutes, s.PriceCents, s.DisplayOrder,
+		s.Name, s.Description, s.DurationMinutes, s.PriceCents, s.Active, s.DisplayOrder,
 		s.ID, s.EstablishmentID,
 	)
 	return err

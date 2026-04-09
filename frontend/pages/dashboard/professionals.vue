@@ -1,14 +1,16 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="ds-kicker">Equipe</p>
-        <h1 class="ds-title mt-1">Profissionais</h1>
-        <p class="mt-2 text-sm leading-6" style="color: var(--color-text-muted);">
-          Cadastre quem atende no estabelecimento e prepare a base do agendamento público.
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-2">
+        <h1 class="ds-title">Profissionais</h1>
+        <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
+          Cadastre, organize e controle quais profissionais estao ativos para operacao e para o agendamento publico.
         </p>
       </div>
-      <AppButton variant="primary" @click="openModal()">+ Novo profissional</AppButton>
+
+      <div class="flex justify-start lg:justify-end">
+        <AppButton variant="primary" @click="openModal()">+ Novo profissional</AppButton>
+      </div>
     </div>
 
     <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">Carregando profissionais...</div>
@@ -45,7 +47,7 @@
             </div>
             <div>
               <p class="text-sm font-semibold" style="color: var(--color-text);">{{ professional.name }}</p>
-              <p class="text-xs" style="color: var(--color-text-soft);">{{ professional.phone || 'Sem telefone cadastrado' }}</p>
+              <p class="text-xs" style="color: var(--color-text-soft);">{{ professional.phone ? formatBrazilianPhoneDisplay(professional.phone) : 'Sem telefone cadastrado' }}</p>
               <p class="mt-1 text-xs" :style="{ color: professional.service_ids.length ? 'var(--color-text-soft)' : 'var(--color-danger)' }">
                 {{ serviceSummary(professional) }}
               </p>
@@ -56,6 +58,9 @@
             <AppStatusPill :tone="professional.active ? 'success' : 'neutral'">
               {{ professional.active ? 'Ativo' : 'Inativo' }}
             </AppStatusPill>
+            <AppButton size="sm" variant="secondary" :disabled="isToggling(professional.id)" @click="toggleActive(professional)">
+              {{ toggleLabel(professional) }}
+            </AppButton>
             <AppButton size="sm" variant="ghost" @click="openModal(professional)">Editar</AppButton>
             <AppButton size="sm" variant="danger" @click="handleDelete(professional)">Remover</AppButton>
           </div>
@@ -77,7 +82,15 @@
         </div>
         <div>
           <label class="ds-label">Telefone</label>
-          <input v-model="modal.phone" type="tel" class="ds-input" />
+          <input
+            :value="modal.phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            class="ds-input"
+            placeholder="(11) 99999-9999"
+            @input="onPhoneInput"
+          />
         </div>
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-3">
@@ -153,7 +166,7 @@
     <AppConfirmModal
       :open="deleteModal.open"
       title="Remover profissional"
-      description="Essa ação remove o cadastro da equipe e pode impactar a operação do estabelecimento."
+      description="Essa acao remove o cadastro da equipe e pode impactar a operacao do estabelecimento."
       eyebrow="Equipe"
       message="Deseja remover este profissional?"
       :details="deleteModal.name ? `Profissional: ${deleteModal.name}` : ''"
@@ -202,6 +215,8 @@ const modal = reactive({
   error: '',
 })
 
+const togglingIds = ref<string[]>([])
+
 const deleteModal = reactive({
   open: false,
   id: '',
@@ -226,14 +241,14 @@ async function openModal(professional?: Professional) {
   modal.error = ''
   modal.id = professional?.id ?? ''
   modal.name = professional?.name ?? ''
-  modal.phone = professional?.phone ?? ''
+  modal.phone = formatBrazilianPhoneInput(professional?.phone ?? '')
   modal.selectedServiceIds = professional?.service_ids ? [...professional.service_ids] : []
 
   if (professional?.id) {
     try {
       const detailed = await getProfessional(professional.id)
       modal.name = detailed.name
-      modal.phone = detailed.phone ?? ''
+      modal.phone = formatBrazilianPhoneInput(detailed.phone ?? '')
       modal.selectedServiceIds = [...detailed.service_ids]
     } catch (e: any) {
       modal.error = e?.data?.error?.message ?? 'Erro ao carregar os servicos do profissional.'
@@ -319,13 +334,24 @@ function serviceSummary(professional: Professional) {
   return remaining > 0 ? `${preview} e mais ${remaining}` : preview
 }
 
+function isToggling(id: string) {
+  return togglingIds.value.includes(id)
+}
+
+function toggleLabel(professional: Professional) {
+  if (isToggling(professional.id)) {
+    return professional.active ? 'Desativando...' : 'Ativando...'
+  }
+  return professional.active ? 'Desativar' : 'Ativar'
+}
+
 async function handleSave() {
   modal.saving = true
   modal.error = ''
   try {
     const data = {
       name: modal.name,
-      phone: modal.phone || undefined,
+      phone: normalizeBrazilianPhone(modal.phone) || undefined,
     }
     if (modal.id) {
       await updateProfessional(modal.id, data)
@@ -340,6 +366,15 @@ async function handleSave() {
     modal.error = e?.data?.error?.message ?? 'Erro ao salvar.'
   } finally {
     modal.saving = false
+  }
+}
+
+async function toggleActive(professional: Professional) {
+  togglingIds.value = [...togglingIds.value, professional.id]
+  try {
+    await updateProfessional(professional.id, { active: !professional.active })
+  } finally {
+    togglingIds.value = togglingIds.value.filter(id => id !== professional.id)
   }
 }
 
@@ -365,5 +400,10 @@ async function confirmDelete() {
   } finally {
     deleteModal.loading = false
   }
+}
+
+function onPhoneInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  modal.phone = formatBrazilianPhoneInput(input.value)
 }
 </script>

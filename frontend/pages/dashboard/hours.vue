@@ -1,10 +1,9 @@
 <template>
   <div class="ds-page max-w-4xl">
-    <div>
-      <p class="ds-kicker">Disponibilidade base</p>
-      <h1 class="ds-title mt-1">Horarios de funcionamento</h1>
-      <p class="mt-2 text-sm leading-6" style="color: var(--color-text-muted);">
-        Defina os horarios base do estabelecimento para alimentar o motor de disponibilidade.
+    <div class="space-y-2">
+      <h1 class="ds-title">Horarios</h1>
+      <p class="text-sm leading-6" style="color: var(--color-text-muted);">
+        Defina a disponibilidade base do estabelecimento para alimentar o motor de horarios e a agenda publica.
       </p>
     </div>
 
@@ -30,7 +29,7 @@
               {{ dayName(hour.day_of_week) }}
             </p>
             <p class="text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">
-              {{ hour.is_closed ? 'Fechado' : `${formattedHour(hour.open_time)} as ${formattedHour(hour.close_time)}` }}
+              {{ hour.is_closed ? 'Fechado' : `${formatShortTimeBr(hour.open_time)} as ${formatShortTimeBr(hour.close_time)}` }}
             </p>
           </div>
 
@@ -43,9 +42,41 @@
             />
 
             <div v-if="!hour.is_closed" class="flex flex-wrap items-center gap-3">
-              <input v-model="hour.open_time" type="time" class="ds-input w-auto min-w-[8.5rem] px-3 py-2" />
+              <div class="flex items-center gap-2">
+                <select
+                  :value="getTimePart(hour.open_time, 'hour')"
+                  class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @change="onTimeSelect(hour, 'open_time', 'hour', $event)"
+                >
+                  <option v-for="option in hourOptions" :key="`open-hour-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
+                </select>
+                <span class="text-sm font-semibold" style="color: var(--color-text-soft);">:</span>
+                <select
+                  :value="getTimePart(hour.open_time, 'minute')"
+                  class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @change="onTimeSelect(hour, 'open_time', 'minute', $event)"
+                >
+                  <option v-for="option in minuteOptions" :key="`open-minute-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
+                </select>
+              </div>
               <span class="text-sm" style="color: var(--color-text-soft);">ate</span>
-              <input v-model="hour.close_time" type="time" class="ds-input w-auto min-w-[8.5rem] px-3 py-2" />
+              <div class="flex items-center gap-2">
+                <select
+                  :value="getTimePart(hour.close_time, 'hour')"
+                  class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @change="onTimeSelect(hour, 'close_time', 'hour', $event)"
+                >
+                  <option v-for="option in hourOptions" :key="`close-hour-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
+                </select>
+                <span class="text-sm font-semibold" style="color: var(--color-text-soft);">:</span>
+                <select
+                  :value="getTimePart(hour.close_time, 'minute')"
+                  class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @change="onTimeSelect(hour, 'close_time', 'minute', $event)"
+                >
+                  <option v-for="option in minuteOptions" :key="`close-minute-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
+                </select>
+              </div>
             </div>
           </div>
         </li>
@@ -79,14 +110,12 @@ const { hours, loading, error, fetchHours, saveHours, dayName } = useBusinessHou
 
 const saving = ref(false)
 const success = ref(false)
+const hourOptions = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
+const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 onMounted(() => {
   fetchHours()
 })
-
-function formattedHour(value: string) {
-  return value.slice(0, 5)
-}
 
 async function save() {
   saving.value = true
@@ -98,5 +127,29 @@ async function save() {
   } finally {
     saving.value = false
   }
+}
+
+function normalizeTime(value: string) {
+  if (!value) return '08:00:00'
+  const [hours = '08', minutes = '00', seconds = '00'] = value.split(':')
+  return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`
+}
+
+function getTimePart(value: string, part: 'hour' | 'minute') {
+  const [hours, minutes] = normalizeTime(value).split(':')
+  return part === 'hour' ? hours : minutes
+}
+
+function updateTimePart(hour: { open_time: string; close_time: string }, field: 'open_time' | 'close_time', part: 'hour' | 'minute', nextValue: string) {
+  const [hours, minutes, seconds] = normalizeTime(hour[field]).split(':')
+  hour[field] = part === 'hour'
+    ? `${nextValue}:${minutes}:${seconds}`
+    : `${hours}:${nextValue}:${seconds}`
+}
+
+function onTimeSelect(hour: { open_time: string; close_time: string }, field: 'open_time' | 'close_time', part: 'hour' | 'minute', event: Event) {
+  const target = event.target as HTMLSelectElement | null
+  if (!target) return
+  updateTimePart(hour, field, part, target.value)
 }
 </script>

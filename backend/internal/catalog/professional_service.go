@@ -77,6 +77,35 @@ func (s *ProfessionalService) Update(ctx context.Context, id, establishmentID st
 	return p, nil
 }
 
+func (s *ProfessionalService) Patch(ctx context.Context, id, establishmentID string, in ProfessionalPatchInput) (*Professional, error) {
+	p, err := s.repo.FindByID(ctx, id, establishmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.Name != nil {
+		p.Name = *in.Name
+	}
+	if in.AvatarURLProvided {
+		p.AvatarURL = in.AvatarURL
+	}
+	if in.PhoneProvided {
+		p.Phone = in.Phone
+	}
+	if in.DisplayOrder != nil {
+		p.DisplayOrder = *in.DisplayOrder
+	}
+	if in.Active != nil {
+		p.Active = *in.Active
+	}
+	p.UpdatedAt = time.Now().UTC()
+
+	if err := s.repo.Update(ctx, p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 func (s *ProfessionalService) Delete(ctx context.Context, id, establishmentID string) error {
 	p, err := s.repo.FindByID(ctx, id, establishmentID)
 	if err != nil {
@@ -147,6 +176,16 @@ type ProfessionalInput struct {
 	AvatarURL    *string
 	Phone        *string
 	DisplayOrder int
+}
+
+type ProfessionalPatchInput struct {
+	Name              *string
+	AvatarURL         *string
+	AvatarURLProvided bool
+	Phone             *string
+	PhoneProvided     bool
+	DisplayOrder      *int
+	Active            *bool
 }
 
 type ProfessionalHourInput struct {

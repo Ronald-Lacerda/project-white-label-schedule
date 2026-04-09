@@ -1,18 +1,18 @@
 <template>
   <div class="space-y-6">
-    <AppSurface tone="default" padding="lg">
-      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p class="ds-kicker">Painel do estabelecimento</p>
-          <h1 class="ds-title mt-1">{{ establishmentName }}</h1>
-          <p class="mt-2 text-sm" style="color: var(--color-text-soft);">{{ today }}</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <AppButton to="/dashboard/professionals" variant="primary">Gerenciar profissionais</AppButton>
-          <AppButton to="/dashboard/services" variant="secondary">Gerenciar servicos</AppButton>
-        </div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-2">
+        <h1 class="ds-title">Inicio</h1>
+        <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
+          Acompanhe o dia atual, valide a prontidao do estabelecimento e acesse rapidamente o link publico.
+        </p>
       </div>
-    </AppSurface>
+
+      <div class="flex flex-wrap gap-3 lg:justify-end">
+        <AppButton to="/dashboard/professionals" variant="primary">Gerenciar profissionais</AppButton>
+        <AppButton to="/dashboard/services" variant="secondary">Gerenciar servicos</AppButton>
+      </div>
+    </div>
 
     <div class="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
       <AppSurface tone="default" padding="none">
@@ -40,8 +40,8 @@
             class="ds-grid-row flex items-center gap-4 px-6 py-3"
           >
             <div class="w-14 flex-shrink-0 text-center">
-              <p class="text-sm font-semibold" style="color: var(--color-text);">{{ formatTime(appointment.starts_at) }}</p>
-              <p class="text-xs" style="color: var(--color-text-soft);">{{ formatTime(appointment.ends_at) }}</p>
+              <p class="text-sm font-semibold" style="color: var(--color-text);">{{ formatShortTimeBr(appointment.starts_at) }}</p>
+              <p class="text-xs" style="color: var(--color-text-soft);">{{ formatShortTimeBr(appointment.ends_at) }}</p>
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-semibold" style="color: var(--color-text);">{{ appointment.client_name }}</p>
@@ -70,8 +70,7 @@
         </div>
 
         <div class="mt-4 flex flex-wrap gap-3">
-          <AppButton :to="`/p/${slug}`" variant="primary" size="lg">Abrir pagina publica</AppButton>
-          <AppButton to="/dashboard/hours" variant="secondary" size="lg">Ajustar horarios</AppButton>
+          <AppButton :to="`/page/${slug}`" variant="primary" size="lg">Abrir pagina publica</AppButton>
         </div>
       </AppSurface>
     </div>
@@ -111,29 +110,69 @@
         <li
           v-for="item in onboardingChecklist"
           :key="item.title"
-          class="flex items-start justify-between gap-4 rounded-[1.2rem] border px-4 py-4"
+          class="rounded-[1.2rem] border px-4 py-4"
           style="border-color: var(--color-border); background: var(--color-surface-muted);"
         >
-          <div class="flex items-start gap-3">
-            <span
-              class="mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full"
-              :style="item.done ? 'background: var(--color-success)' : 'background: var(--color-warning)'"
-            />
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="text-sm font-semibold" style="color: var(--color-text);">{{ item.title }}</p>
-                <AppStatusPill :tone="item.done ? 'success' : 'warning'">
-                  {{ item.done ? 'Concluido' : 'Pendente' }}
-                </AppStatusPill>
+          <div class="flex items-start justify-between gap-4 md:items-center">
+            <div class="flex items-start gap-3">
+              <span
+                class="mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                :style="item.done ? 'background: var(--color-success)' : 'background: var(--color-warning)'"
+              />
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="text-sm font-semibold" style="color: var(--color-text);">{{ item.title }}</p>
+                  <AppStatusPill :tone="item.done ? 'success' : 'warning'">
+                    {{ item.done ? 'Concluido' : 'Pendente' }}
+                  </AppStatusPill>
+                </div>
               </div>
-              <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ item.description }}</p>
-              <p class="mt-1 text-sm" style="color: var(--color-text-soft);">{{ item.impact }}</p>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-2 self-start md:self-center">
+              <AppButton :to="item.to" variant="ghost" size="sm" class="flex-shrink-0">
+                {{ item.actionLabel }}
+              </AppButton>
+              <AppButton
+                v-if="item.done"
+                variant="secondary"
+                size="sm"
+                class="flex h-9 w-9 flex-shrink-0 items-center justify-center p-0"
+                :aria-label="isChecklistItemExpanded(item.title) ? 'Recolher detalhes do checklist' : 'Expandir detalhes do checklist'"
+                @click="toggleChecklistItem(item.title)"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    v-if="isChecklistItemExpanded(item.title)"
+                    d="M5 12.5L10 7.5L15 12.5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    v-else
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </AppButton>
             </div>
           </div>
 
-          <AppButton :to="item.to" variant="ghost" size="sm" class="flex-shrink-0">
-            {{ item.actionLabel }}
-          </AppButton>
+          <div v-if="!item.done || isChecklistItemExpanded(item.title)" class="ml-5 mt-3 space-y-1">
+            <p class="text-sm" style="color: var(--color-text-muted);">{{ item.description }}</p>
+            <p class="text-sm" style="color: var(--color-text-soft);">{{ item.impact }}</p>
+          </div>
         </li>
       </ul>
     </AppSurface>
@@ -148,6 +187,7 @@ const { professionals, fetchProfessionals } = useProfessionals()
 const { services, fetchServices } = useServices()
 const { hours, fetchHours } = useBusinessHours()
 const { appointments: todayAppointments, loading: appointmentsLoading, fetchAppointments } = useAppointments()
+const expandedChecklistItems = ref<string[]>([])
 
 const today = new Date().toLocaleDateString('pt-BR', {
   weekday: 'long',
@@ -158,18 +198,26 @@ const today = new Date().toLocaleDateString('pt-BR', {
 
 const establishmentName = computed(() => establishment.value?.name || 'Seu estabelecimento')
 const slug = computed(() => establishment.value?.slug || 'seu-slug')
-const publicLink = computed(() => `/p/${slug.value}`)
+const publicLink = computed(() => `/page/${slug.value}`)
 const openDays = computed(() => hours.value.filter(hour => !hour.is_closed).length)
 const googleConnected = computed(() => Boolean(establishment.value?.google_calendar_connected))
 
 const onboardingChecklist = computed(() => [
+  {
+    title: 'Google Agenda conectado',
+    description: 'Conecte a conta Google para habilitar a sincronizacao das agendas dos profissionais.',
+    impact: 'Sem essa conexao, o estabelecimento ainda nao deve operar na plataforma.',
+    done: googleConnected.value,
+    to: '/dashboard/settings/google',
+    actionLabel: 'Gerenciar',
+  },
   {
     title: 'Profissionais cadastrados',
     description: 'Cadastre pelo menos um profissional para formar a agenda de atendimento.',
     impact: 'Sem profissionais, nao ha agenda, disponibilidade nem vinculo de calendario.',
     done: professionals.value.length > 0,
     to: '/dashboard/professionals',
-    actionLabel: professionals.value.length > 0 ? 'Revisar' : 'Configurar',
+    actionLabel: 'Gerenciar',
   },
   {
     title: 'Servicos publicados',
@@ -177,7 +225,7 @@ const onboardingChecklist = computed(() => [
     impact: 'Sem servicos, o fluxo publico nao consegue iniciar um novo agendamento.',
     done: services.value.length > 0,
     to: '/dashboard/services',
-    actionLabel: services.value.length > 0 ? 'Revisar' : 'Configurar',
+    actionLabel: 'Gerenciar',
   },
   {
     title: 'Horarios de atendimento',
@@ -185,15 +233,7 @@ const onboardingChecklist = computed(() => [
     impact: 'Sem horarios, o motor de disponibilidade nao oferece slots para reserva.',
     done: openDays.value > 0,
     to: '/dashboard/hours',
-    actionLabel: openDays.value > 0 ? 'Ajustar' : 'Configurar',
-  },
-  {
-    title: 'Google Agenda conectado',
-    description: 'Conecte a conta Google para habilitar a sincronizacao das agendas dos profissionais.',
-    impact: 'Sem essa conexao, o estabelecimento ainda nao deve operar na plataforma.',
-    done: googleConnected.value,
-    to: '/dashboard/settings/google',
-    actionLabel: googleConnected.value ? 'Gerenciar' : 'Conectar',
+    actionLabel: 'Gerenciar',
   },
 ])
 
@@ -214,12 +254,21 @@ const readinessSummaryStyle = computed(() =>
     : 'border-color: rgba(184, 107, 22, 0.2); background: var(--color-warning-soft);',
 )
 
-function todayStr() {
-  return formatLocalDateInputValue()
+function isChecklistItemExpanded(title: string) {
+  return expandedChecklistItems.value.includes(title)
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+function toggleChecklistItem(title: string) {
+  if (isChecklistItemExpanded(title)) {
+    expandedChecklistItems.value = expandedChecklistItems.value.filter(item => item !== title)
+    return
+  }
+
+  expandedChecklistItems.value = [...expandedChecklistItems.value, title]
+}
+
+function todayStr() {
+  return formatLocalDateInputValue()
 }
 
 function statusLabel(status: string) {
@@ -247,7 +296,7 @@ onMounted(async () => {
     fetchProfessionals(),
     fetchServices(),
     fetchHours(),
-    fetchAppointments({ date: todayStr(), per_page: 50 }),
+    fetchAppointments({ date_from: todayStr(), date_to: todayStr(), per_page: 50 }),
   ])
 })
 </script>

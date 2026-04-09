@@ -1,14 +1,16 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p class="ds-kicker">Catalogo</p>
-        <h1 class="ds-title mt-1">Servicos</h1>
-        <p class="mt-2 text-sm leading-6" style="color: var(--color-text-muted);">
-          Monte o catalogo que aparece para o cliente escolher no fluxo publico.
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-2">
+        <h1 class="ds-title">Servicos</h1>
+        <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
+          Monte o catalogo do estabelecimento e controle quais servicos continuam disponiveis para novos agendamentos.
         </p>
       </div>
-      <AppButton variant="primary" @click="openModal()">+ Novo servico</AppButton>
+
+      <div class="flex justify-start lg:justify-end">
+        <AppButton variant="primary" @click="openModal()">+ Novo servico</AppButton>
+      </div>
     </div>
 
     <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">Carregando servicos...</div>
@@ -47,6 +49,9 @@
             <AppStatusPill :tone="service.active ? 'success' : 'neutral'">
               {{ service.active ? 'Ativo' : 'Inativo' }}
             </AppStatusPill>
+            <AppButton size="sm" variant="secondary" :disabled="isToggling(service.id)" @click="toggleActive(service)">
+              {{ toggleLabel(service) }}
+            </AppButton>
             <AppButton size="sm" variant="ghost" @click="openModal(service)">Editar</AppButton>
             <AppButton size="sm" variant="danger" @click="handleDelete(service)">Remover</AppButton>
           </div>
@@ -92,7 +97,14 @@
         </div>
         <div>
           <label class="ds-label">Preco (R$)</label>
-          <input v-model="modal.price_reais" type="number" min="0" step="0.01" class="ds-input" placeholder="0,00" />
+          <input
+            :value="modal.price_reais"
+            type="text"
+            inputmode="decimal"
+            class="ds-input"
+            placeholder="0,00"
+            @input="onPriceInput"
+          />
         </div>
         <p v-if="modal.error" class="text-sm" style="color: var(--color-danger);">{{ modal.error }}</p>
         <div class="flex justify-end gap-3 pt-2">
@@ -156,6 +168,8 @@ const deleteModal = reactive({
   loading: false,
 })
 
+const togglingIds = ref<string[]>([])
+
 onMounted(() => {
   reload()
 })
@@ -173,7 +187,7 @@ function openModal(service?: Service) {
     ? (service?.duration_minutes ?? 30)
     : 0
   modal.custom_duration = service?.duration_minutes ?? 60
-  modal.price_reais = service?.price_cents != null ? String(service.price_cents / 100) : ''
+  modal.price_reais = formatBrazilianCurrencyFromCents(service?.price_cents)
   modal.error = ''
 }
 
@@ -200,7 +214,7 @@ async function handleSave() {
       name: modal.name,
       description: modal.description || undefined,
       duration_minutes: effectiveDuration(),
-      price_cents: modal.price_reais !== '' ? Math.round(Number(modal.price_reais) * 100) : undefined,
+      price_cents: normalizeBrazilianCurrencyInput(modal.price_reais),
     }
     if (modal.id) {
       await updateService(modal.id, data)
@@ -236,6 +250,31 @@ async function confirmDelete() {
     closeDeleteModal()
   } finally {
     deleteModal.loading = false
+  }
+}
+
+function onPriceInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  modal.price_reais = formatBrazilianCurrencyInput(input.value)
+}
+
+function isToggling(id: string) {
+  return togglingIds.value.includes(id)
+}
+
+function toggleLabel(service: Service) {
+  if (isToggling(service.id)) {
+    return service.active ? 'Desativando...' : 'Ativando...'
+  }
+  return service.active ? 'Desativar' : 'Ativar'
+}
+
+async function toggleActive(service: Service) {
+  togglingIds.value = [...togglingIds.value, service.id]
+  try {
+    await updateService(service.id, { active: !service.active })
+  } finally {
+    togglingIds.value = togglingIds.value.filter(id => id !== service.id)
   }
 }
 </script>

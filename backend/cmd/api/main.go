@@ -59,7 +59,7 @@ func main() {
 	profSvc := catalog.NewProfessionalService(profRepo)
 	svcSvc := catalog.NewSvcService(svcRepo)
 	calendarSvc := calendar.NewService(calendarRepo)
-	schedulingSvc := scheduling.NewService(schedulingRepo, rdb)
+	schedulingSvc := scheduling.NewService(schedulingRepo, rdb, calendarSvc)
 	profSvc.WithCalendar(calendarSvc)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ func main() {
 
 		r.Get("/services", func(w http.ResponseWriter, r *http.Request) {
 			estID := shared.EstablishmentIDFromContext(r.Context())
-			list, err := svcSvc.List(r.Context(), estID)
+			list, err := svcSvc.ListActive(r.Context(), estID)
 			if err != nil {
 				shared.JSONError(w, err)
 				return
@@ -194,17 +194,7 @@ func main() {
 			estID := shared.EstablishmentIDFromContext(r.Context())
 			serviceID := r.URL.Query().Get("service_id")
 
-			if serviceID != "" {
-				list, err := schedulingRepo.GetActiveProfessionals(r.Context(), estID, serviceID)
-				if err != nil {
-					shared.JSONError(w, err)
-					return
-				}
-				shared.JSON(w, http.StatusOK, list)
-				return
-			}
-
-			list, err := profSvc.List(r.Context(), estID)
+			list, err := schedulingRepo.GetActiveProfessionals(r.Context(), estID, serviceID)
 			if err != nil {
 				shared.JSONError(w, err)
 				return

@@ -1,15 +1,14 @@
 <template>
   <div class="ds-page">
-    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-      <div class="max-w-2xl">
-        <p class="ds-kicker">Agenda operacional</p>
-        <h1 class="ds-title mt-2">Agendamentos com leitura rapida e acao imediata</h1>
-        <p class="ds-subtitle mt-3">
-          Visualize a operacao do dia, identifique conflitos e bloqueie periodos sem perder contexto.
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-2">
+        <h1 class="ds-title">Agendamentos</h1>
+        <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
+          Consulte a agenda por periodo, acompanhe os status e bloqueie intervalos da equipe quando necessario.
         </p>
       </div>
 
-      <div class="flex flex-wrap gap-3">
+      <div class="flex flex-wrap gap-3 lg:justify-end">
         <AppButton variant="secondary" @click="clearFilters">
           Limpar filtros
         </AppButton>
@@ -17,18 +16,6 @@
           Bloquear periodo
         </AppButton>
       </div>
-    </div>
-
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <AppSurface v-for="card in summaryCards" :key="card.label" tone="default">
-        <div class="space-y-3">
-          <AppStatusPill :tone="card.tone">{{ card.label }}</AppStatusPill>
-          <div>
-            <p class="text-3xl font-semibold tracking-tight" style="color: var(--color-text);">{{ card.value }}</p>
-            <p class="mt-2 text-sm leading-6" style="color: var(--color-text-muted);">{{ card.description }}</p>
-          </div>
-        </div>
-      </AppSurface>
     </div>
 
     <AppSurface tone="brand">
@@ -40,16 +27,19 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <AppStatusPill tone="info">Confirmado</AppStatusPill>
-            <AppStatusPill tone="success">Concluido</AppStatusPill>
-            <AppStatusPill tone="warning">No-show</AppStatusPill>
             <AppStatusPill tone="danger">Cancelado</AppStatusPill>
           </div>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-[1.1fr_1fr_1fr_auto]">
+        <div class="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
           <div>
-            <label class="ds-label">Data</label>
-            <input v-model="filters.date" type="date" class="ds-input" />
+            <label class="ds-label">De</label>
+            <input v-model="filters.date_from" type="date" lang="pt-BR" class="ds-input" />
+          </div>
+
+          <div>
+            <label class="ds-label">Ate</label>
+            <input v-model="filters.date_to" type="date" lang="pt-BR" class="ds-input" />
           </div>
 
           <div>
@@ -67,8 +57,6 @@
             <select v-model="filters.status" class="ds-select">
               <option value="">Todos</option>
               <option value="confirmed">Confirmado</option>
-              <option value="completed">Concluido</option>
-              <option value="no_show">No-show</option>
               <option value="cancelled">Cancelado</option>
             </select>
           </div>
@@ -159,7 +147,7 @@
                 </td>
                 <td class="px-6 py-4">
                   <p class="text-sm font-semibold" style="color: var(--color-text);">{{ appointment.client_name }}</p>
-                  <p class="mt-1 text-xs" style="color: var(--color-text-soft);">{{ appointment.client_phone }}</p>
+                  <p class="mt-1 text-xs" style="color: var(--color-text-soft);">{{ formatBrazilianPhoneDisplay(appointment.client_phone) }}</p>
                 </td>
                 <td class="px-6 py-4">
                   <p class="text-sm font-medium" style="color: var(--color-text);">{{ appointment.service_name }}</p>
@@ -171,13 +159,13 @@
                 <td class="px-6 py-4">
                   <AppStatusPill :tone="statusTone(appointment.status)">{{ statusLabel(appointment.status) }}</AppStatusPill>
                 </td>
-                <td class="px-6 py-4" @click.stop>
-                  <div v-if="appointment.status === 'confirmed'" class="flex justify-end gap-2">
-                    <AppButton size="sm" variant="secondary" @click="changeStatus(appointment, 'completed')">Concluir</AppButton>
-                    <AppButton size="sm" variant="ghost" @click="changeStatus(appointment, 'no_show')">No-show</AppButton>
+                <td class="px-6 py-4 align-middle" @click.stop>
+                  <div v-if="appointment.status === 'confirmed'" class="flex items-center justify-end gap-2">
                     <AppButton size="sm" variant="danger" @click="changeStatus(appointment, 'cancelled')">Cancelar</AppButton>
                   </div>
-                  <span v-else class="text-xs font-medium uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Finalizado</span>
+                  <div v-else class="flex items-center justify-end">
+                    <span class="text-xs font-medium uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Finalizado</span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -204,7 +192,7 @@
             <div class="mt-4 space-y-3">
               <div>
                 <p class="text-sm font-semibold" style="color: var(--color-text);">{{ appointment.client_name }}</p>
-                <p class="text-sm" style="color: var(--color-text-muted);">{{ appointment.client_phone }}</p>
+                <p class="text-sm" style="color: var(--color-text-muted);">{{ formatBrazilianPhoneDisplay(appointment.client_phone) }}</p>
               </div>
               <div class="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -220,8 +208,6 @@
 
             <div class="mt-4 flex flex-wrap gap-2">
               <AppButton size="sm" variant="secondary" @click="openDetail(appointment)">Detalhes</AppButton>
-              <AppButton v-if="appointment.status === 'confirmed'" size="sm" variant="secondary" @click="changeStatus(appointment, 'completed')">Concluir</AppButton>
-              <AppButton v-if="appointment.status === 'confirmed'" size="sm" variant="ghost" @click="changeStatus(appointment, 'no_show')">No-show</AppButton>
               <AppButton v-if="appointment.status === 'confirmed'" size="sm" variant="danger" @click="changeStatus(appointment, 'cancelled')">Cancelar</AppButton>
             </div>
           </div>
@@ -256,7 +242,7 @@
           <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
             <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Cliente</p>
             <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">{{ detailAppt.client_name }}</p>
-            <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ detailAppt.client_phone }}</p>
+            <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ formatBrazilianPhoneDisplay(detailAppt.client_phone) }}</p>
             <p v-if="detailAppt.client_email" class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ detailAppt.client_email }}</p>
             <p v-if="detailAppt.client_birth_date" class="mt-1 text-sm" style="color: var(--color-text-muted);">Nascimento: {{ formatBirthDate(detailAppt.client_birth_date) }}</p>
           </div>
@@ -291,9 +277,7 @@
 
       <template #footer>
         <div v-if="detailAppt?.status === 'confirmed'" class="flex flex-wrap justify-end gap-2">
-          <AppButton variant="secondary" @click="changeStatus(detailAppt, 'completed')">Marcar concluido</AppButton>
-          <AppButton variant="ghost" @click="changeStatus(detailAppt, 'no_show')">No-show</AppButton>
-          <AppButton variant="danger" @click="changeStatus(detailAppt, 'cancelled')">Cancelar</AppButton>
+          <AppButton variant="danger" @click="changeStatus(detailAppt, 'cancelled')">Cancelar agendamento</AppButton>
         </div>
       </template>
     </AppModal>
@@ -317,11 +301,11 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <label class="ds-label">Inicio</label>
-            <input v-model="blockForm.starts_at" type="datetime-local" class="ds-input" />
+            <input v-model="blockForm.starts_at" type="datetime-local" lang="pt-BR" class="ds-input" />
           </div>
           <div>
             <label class="ds-label">Fim</label>
-            <input v-model="blockForm.ends_at" type="datetime-local" class="ds-input" />
+            <input v-model="blockForm.ends_at" type="datetime-local" lang="pt-BR" class="ds-input" />
           </div>
         </div>
         <div>
@@ -377,7 +361,8 @@ const {
 const { professionals, fetchProfessionals } = useProfessionals()
 
 const filters = reactive({
-  date: formatLocalDateInputValue(),
+  date_from: formatLocalDateInputValue(),
+  date_to: formatLocalDateInputValue(),
   professional_id: '',
   status: '',
 })
@@ -394,39 +379,6 @@ const removeBlockModal = reactive({
   loading: false,
 })
 
-const summaryCards = computed(() => {
-  const confirmed = appointments.value.filter(item => item.status === 'confirmed').length
-  const completed = appointments.value.filter(item => item.status === 'completed').length
-  const issueCount = appointments.value.filter(item => ['cancelled', 'no_show'].includes(item.status)).length
-
-  return [
-    {
-      label: 'Na fila',
-      value: appointments.value.length,
-      description: 'Total exibido para o filtro atual, ajudando a dimensionar a carga do dia.',
-      tone: 'brand' as const,
-    },
-    {
-      label: 'Confirmados',
-      value: confirmed,
-      description: 'Atendimentos prontos para acontecer, com maior prioridade operacional.',
-      tone: 'info' as const,
-    },
-    {
-      label: 'Concluidos',
-      value: completed,
-      description: 'Atendimentos ja encerrados, uteis para leitura rapida de progresso.',
-      tone: 'success' as const,
-    },
-    {
-      label: 'Atencao',
-      value: issueCount + blockedPeriods.value.length,
-      description: 'Soma de cancelamentos, no-shows e bloqueios que impactam a grade.',
-      tone: 'warning' as const,
-    },
-  ]
-})
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -436,10 +388,7 @@ function formatDate(iso: string) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatShortTimeBr(iso)
 }
 
 function formatBirthDate(value: string) {
@@ -472,12 +421,13 @@ function statusTone(status: string) {
 async function applyFilters() {
   await Promise.allSettled([
     fetchAppointments({ ...filters, page: 1, per_page: 20 }),
-    fetchBlockedPeriods(filters.professional_id || undefined, filters.date || undefined),
+    fetchBlockedPeriods(filters.professional_id || undefined, filters.date_from || undefined, filters.date_to || undefined),
   ])
 }
 
 async function clearFilters() {
-  filters.date = formatLocalDateInputValue()
+  filters.date_from = formatLocalDateInputValue()
+  filters.date_to = formatLocalDateInputValue()
   filters.professional_id = ''
   filters.status = ''
   await applyFilters()
@@ -525,7 +475,7 @@ async function submitBlock() {
       reason: blockForm.reason || undefined,
     })
     showBlockModal.value = false
-    await fetchBlockedPeriods(filters.professional_id || undefined, filters.date || undefined)
+    await fetchBlockedPeriods(filters.professional_id || undefined, filters.date_from || undefined, filters.date_to || undefined)
   } catch (e: any) {
     blockError.value = e?.data?.error?.message ?? 'Erro ao criar bloqueio.'
   } finally {
@@ -560,8 +510,8 @@ async function removeBlockedPeriod() {
 onMounted(async () => {
   await Promise.allSettled([
     fetchProfessionals(),
-    fetchAppointments({ date: filters.date, page: 1, per_page: 20 }),
-    fetchBlockedPeriods(undefined, filters.date),
+    fetchAppointments({ date_from: filters.date_from, date_to: filters.date_to, page: 1, per_page: 20 }),
+    fetchBlockedPeriods(undefined, filters.date_from, filters.date_to),
   ])
 })
 </script>
