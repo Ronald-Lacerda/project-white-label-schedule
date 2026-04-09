@@ -33,6 +33,8 @@ export function useServices() {
     }
   }
 
+  const activeServices = computed(() => services.value.filter(service => service.active))
+
   async function createService(data: {
     name: string
     description?: string
@@ -71,6 +73,7 @@ export function useServices() {
 
   return {
     services,
+    activeServices,
     loading,
     error,
     fetchServices,

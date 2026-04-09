@@ -3,7 +3,9 @@ package scheduling
 import (
 	"fmt"
 	"net/http"
+	"net/mail"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -174,12 +176,14 @@ func (h *Handler) CreatePublicAppointment(w http.ResponseWriter, r *http.Request
 	establishmentID := shared.EstablishmentIDFromContext(ctx)
 
 	var req struct {
-		ServiceID      string `json:"service_id"`
-		ProfessionalID string `json:"professional_id"`
-		StartsAt       string `json:"starts_at"`
-		ClientName     string `json:"client_name"`
-		ClientPhone    string `json:"client_phone"`
-		IdempotencyKey string `json:"idempotency_key"`
+		ServiceID       string `json:"service_id"`
+		ProfessionalID  string `json:"professional_id"`
+		StartsAt        string `json:"starts_at"`
+		ClientName      string `json:"client_name"`
+		ClientEmail     string `json:"client_email"`
+		ClientPhone     string `json:"client_phone"`
+		ClientBirthDate string `json:"client_birth_date"`
+		IdempotencyKey  string `json:"idempotency_key"`
 	}
 	if err := shared.Decode(r, &req); err != nil {
 		shared.JSONError(w, err)
@@ -196,13 +200,41 @@ func (h *Handler) CreatePublicAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if strings.TrimSpace(req.ClientName) == "" ||
+		strings.TrimSpace(req.ClientEmail) == "" ||
+		strings.TrimSpace(req.ClientPhone) == "" ||
+		strings.TrimSpace(req.ClientBirthDate) == "" {
+		shared.JSONError(w, shared.ErrInvalidInput)
+		return
+	}
+
+	if _, err := mail.ParseAddress(strings.TrimSpace(req.ClientEmail)); err != nil {
+		shared.JSONError(w, &shared.DomainError{
+			Code:    "INVALID_CLIENT_EMAIL",
+			Message: "Formato invalido para client_email.",
+			Status:  http.StatusBadRequest,
+		})
+		return
+	}
+
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(req.ClientBirthDate)); err != nil {
+		shared.JSONError(w, &shared.DomainError{
+			Code:    "INVALID_CLIENT_BIRTH_DATE",
+			Message: "Formato invalido para client_birth_date. Use YYYY-MM-DD.",
+			Status:  http.StatusBadRequest,
+		})
+		return
+	}
+
 	result, err := h.svc.CreatePublicAppointment(ctx, CreateAppointmentInput{
 		EstablishmentID: establishmentID,
 		ServiceID:       req.ServiceID,
 		ProfessionalID:  req.ProfessionalID,
 		StartsAt:        startsAt.UTC(),
 		ClientName:      req.ClientName,
+		ClientEmail:     req.ClientEmail,
 		ClientPhone:     req.ClientPhone,
+		ClientBirthDate: req.ClientBirthDate,
 		IdempotencyKey:  req.IdempotencyKey,
 	})
 	if err != nil {

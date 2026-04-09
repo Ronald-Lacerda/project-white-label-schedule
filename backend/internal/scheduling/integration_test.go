@@ -36,16 +36,24 @@ func TestPublicAppointmentIntegration_CreateAndCancel(t *testing.T) {
 	fixture := newSchedulingIntegrationFixture(t)
 
 	created := fixture.createAppointment(t, map[string]any{
-		"service_id":      fixture.serviceID,
-		"professional_id": fixture.professionalID,
-		"starts_at":       fixture.startsAt.Format(time.RFC3339),
-		"client_name":     "Maria Oliveira",
-		"client_phone":    "11999990000",
-		"idempotency_key": "8c77b028-6cba-4425-ab26-9b00d71fd2f2",
+		"service_id":        fixture.serviceID,
+		"professional_id":   fixture.professionalID,
+		"starts_at":         fixture.startsAt.Format(time.RFC3339),
+		"client_name":       "Maria Oliveira",
+		"client_email":      "maria@example.com",
+		"client_phone":      "11999990000",
+		"client_birth_date": "1993-05-14",
+		"idempotency_key":   "8c77b028-6cba-4425-ab26-9b00d71fd2f2",
 	})
 
 	if created["status"] != "confirmed" {
 		t.Fatalf("expected confirmed status, got %v", created["status"])
+	}
+	if created["client_email"] != "maria@example.com" {
+		t.Fatalf("expected client_email in response, got %v", created["client_email"])
+	}
+	if created["client_birth_date"] != "1993-05-14" {
+		t.Fatalf("expected client_birth_date in response, got %v", created["client_birth_date"])
 	}
 
 	appointmentID, _ := created["id"].(string)

@@ -8,7 +8,7 @@ export function useApi() {
     const url = `${config.public.apiBaseUrl}${path}`
 
     const makeRequest = () =>
-      $fetch<{ data: T }>(url, {
+      $fetch.raw<{ data: T }>(url, {
         timeout: defaultTimeoutMs,
         ...options,
         headers: {
@@ -19,13 +19,19 @@ export function useApi() {
 
     try {
       const res = await makeRequest()
-      return res.data
+      if (res.status === 204) {
+        return undefined as T
+      }
+      return res._data?.data as T
     } catch (error: any) {
       if (error?.status === 401) {
         const restored = await auth.refresh()
         if (restored) {
           const res = await makeRequest()
-          return res.data
+          if (res.status === 204) {
+            return undefined as T
+          }
+          return res._data?.data as T
         }
       }
 

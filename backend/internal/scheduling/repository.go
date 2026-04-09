@@ -242,7 +242,7 @@ func (r *repository) FindAppointmentByIdempotencyKey(ctx context.Context, establ
 	var appt Appointment
 	err := r.db.GetContext(ctx, &appt, `
 		SELECT id, establishment_id, professional_id, service_id,
-		       client_name, client_phone, starts_at, ends_at,
+		       client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 		       status, source, google_event_id, notes, idempotency_key,
 		       created_at, updated_at
 		  FROM appointments
@@ -263,7 +263,7 @@ func (r *repository) FindAppointmentByIDAndPhone(ctx context.Context, establishm
 	var appt Appointment
 	err := r.db.GetContext(ctx, &appt, `
 		SELECT id, establishment_id, professional_id, service_id,
-		       client_name, client_phone, starts_at, ends_at,
+		       client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 		       status, source, google_event_id, notes, idempotency_key,
 		       created_at, updated_at
 		  FROM appointments
@@ -291,7 +291,7 @@ func (r *repository) CreateAppointment(ctx context.Context, input CreateAppointm
 	var existing Appointment
 	err = tx.GetContext(ctx, &existing, `
 		SELECT id, establishment_id, professional_id, service_id,
-		       client_name, client_phone, starts_at, ends_at,
+		       client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 		       status, source, google_event_id, notes, idempotency_key,
 		       created_at, updated_at
 		  FROM appointments
@@ -336,7 +336,9 @@ func (r *repository) CreateAppointment(ctx context.Context, input CreateAppointm
 		ProfessionalID:  input.ProfessionalID,
 		ServiceID:       input.ServiceID,
 		ClientName:      input.ClientName,
+		ClientEmail:     nullableString(input.ClientEmail),
 		ClientPhone:     input.ClientPhone,
+		ClientBirthDate: nullableString(input.ClientBirthDate),
 		StartsAt:        input.StartsAt.UTC(),
 		EndsAt:          endsAt.UTC(),
 		Status:          "confirmed",
@@ -349,11 +351,11 @@ func (r *repository) CreateAppointment(ctx context.Context, input CreateAppointm
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO appointments (
 			id, establishment_id, professional_id, service_id,
-			client_name, client_phone, starts_at, ends_at,
+			client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 			status, source, idempotency_key, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		appointment.ID, appointment.EstablishmentID, appointment.ProfessionalID, appointment.ServiceID,
-		appointment.ClientName, appointment.ClientPhone, appointment.StartsAt, appointment.EndsAt,
+		appointment.ClientName, appointment.ClientEmail, appointment.ClientPhone, appointment.ClientBirthDate, appointment.StartsAt, appointment.EndsAt,
 		appointment.Status, appointment.Source, appointment.IdempotencyKey, appointment.CreatedAt, appointment.UpdatedAt,
 	)
 	if err != nil {
@@ -384,7 +386,7 @@ func (r *repository) CancelAppointment(ctx context.Context, establishmentID, app
 	var appt Appointment
 	err = r.db.GetContext(ctx, &appt, `
 		SELECT id, establishment_id, professional_id, service_id,
-		       client_name, client_phone, starts_at, ends_at,
+		       client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 		       status, source, google_event_id, notes, idempotency_key,
 		       created_at, updated_at
 		  FROM appointments
@@ -411,7 +413,7 @@ func (r *repository) RescheduleAppointment(ctx context.Context, current *Appoint
 	var lockedCurrent Appointment
 	err = tx.GetContext(ctx, &lockedCurrent, `
 		SELECT id, establishment_id, professional_id, service_id,
-		       client_name, client_phone, starts_at, ends_at,
+		       client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 		       status, source, google_event_id, notes, idempotency_key,
 		       created_at, updated_at
 		  FROM appointments
@@ -466,7 +468,9 @@ func (r *repository) RescheduleAppointment(ctx context.Context, current *Appoint
 		ProfessionalID:  input.ProfessionalID,
 		ServiceID:       input.ServiceID,
 		ClientName:      input.ClientName,
+		ClientEmail:     nullableString(input.ClientEmail),
 		ClientPhone:     input.ClientPhone,
+		ClientBirthDate: nullableString(input.ClientBirthDate),
 		StartsAt:        input.StartsAt.UTC(),
 		EndsAt:          endsAt.UTC(),
 		Status:          "confirmed",
@@ -479,11 +483,11 @@ func (r *repository) RescheduleAppointment(ctx context.Context, current *Appoint
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO appointments (
 			id, establishment_id, professional_id, service_id,
-			client_name, client_phone, starts_at, ends_at,
+			client_name, client_email, client_phone, client_birth_date, starts_at, ends_at,
 			status, source, idempotency_key, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		newAppointment.ID, newAppointment.EstablishmentID, newAppointment.ProfessionalID, newAppointment.ServiceID,
-		newAppointment.ClientName, newAppointment.ClientPhone, newAppointment.StartsAt, newAppointment.EndsAt,
+		newAppointment.ClientName, newAppointment.ClientEmail, newAppointment.ClientPhone, newAppointment.ClientBirthDate, newAppointment.StartsAt, newAppointment.EndsAt,
 		newAppointment.Status, newAppointment.Source, newAppointment.IdempotencyKey, newAppointment.CreatedAt, newAppointment.UpdatedAt,
 	)
 	if err != nil {
@@ -500,7 +504,7 @@ func (r *repository) RescheduleAppointment(ctx context.Context, current *Appoint
 const managerAppointmentSelect = `
 	SELECT a.id, a.establishment_id, a.professional_id, p.name AS professional_name,
 	       a.service_id, s.name AS service_name, s.duration_minutes,
-	       a.client_name, a.client_phone, a.starts_at, a.ends_at,
+	       a.client_name, a.client_email, a.client_phone, a.client_birth_date, a.starts_at, a.ends_at,
 	       a.status, a.source, a.notes, a.created_at
 	  FROM appointments a
 	  JOIN professionals p ON p.id = a.professional_id
@@ -545,6 +549,14 @@ func (r *repository) ListManagerAppointments(ctx context.Context, establishmentI
 		return nil, 0, err
 	}
 	return rows, total, nil
+}
+
+func nullableString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	v := value
+	return &v
 }
 
 func (r *repository) GetManagerAppointment(ctx context.Context, establishmentID, appointmentID string) (*ManagerAppointmentRow, error) {

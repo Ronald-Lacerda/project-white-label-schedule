@@ -257,6 +257,8 @@
             <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Cliente</p>
             <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">{{ detailAppt.client_name }}</p>
             <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ detailAppt.client_phone }}</p>
+            <p v-if="detailAppt.client_email" class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ detailAppt.client_email }}</p>
+            <p v-if="detailAppt.client_birth_date" class="mt-1 text-sm" style="color: var(--color-text-muted);">Nascimento: {{ formatBirthDate(detailAppt.client_birth_date) }}</p>
           </div>
           <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
             <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Status</p>
@@ -437,6 +439,14 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+function formatBirthDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   })
 }
 

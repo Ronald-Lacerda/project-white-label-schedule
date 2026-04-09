@@ -46,6 +46,9 @@
             <div>
               <p class="text-sm font-semibold" style="color: var(--color-text);">{{ professional.name }}</p>
               <p class="text-xs" style="color: var(--color-text-soft);">{{ professional.phone || 'Sem telefone cadastrado' }}</p>
+              <p class="mt-1 text-xs" :style="{ color: professional.service_ids.length ? 'var(--color-text-soft)' : 'var(--color-danger)' }">
+                {{ serviceSummary(professional) }}
+              </p>
             </div>
           </div>
 
@@ -75,6 +78,67 @@
         <div>
           <label class="ds-label">Telefone</label>
           <input v-model="modal.phone" type="tel" class="ds-input" />
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <label class="ds-label">Servicos atendidos</label>
+              <p class="text-xs leading-5" style="color: var(--color-text-muted);">
+                Selecione os servicos que este profissional atende.
+              </p>
+            </div>
+            <span v-if="servicesLoading" class="text-xs" style="color: var(--color-text-muted);">Carregando...</span>
+          </div>
+
+          <div
+            v-if="servicesError"
+            class="rounded-[1rem] border px-4 py-3 text-sm"
+            style="background: var(--color-danger-soft); border-color: var(--color-danger); color: var(--color-danger);"
+          >
+            {{ servicesError }}
+          </div>
+
+          <div
+            v-else-if="activeServices.length === 0"
+            class="rounded-[1rem] border px-4 py-3 text-sm"
+            style="border-color: var(--color-border); color: var(--color-text-muted); background: var(--color-surface-muted);"
+          >
+            Nenhum servico ativo foi encontrado. Cadastre um servico para liberar este profissional no agendamento publico.
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              v-for="service in activeServices"
+              :key="service.id"
+              type="button"
+              class="rounded-[1rem] border px-3 py-3 text-left transition"
+              :style="serviceOptionStyle(modal.selectedServiceIds.includes(service.id))"
+              @click="toggleService(service.id)"
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-[10px] font-bold"
+                  :style="serviceCheckStyle(modal.selectedServiceIds.includes(service.id))"
+                >
+                  {{ modal.selectedServiceIds.includes(service.id) ? 'x' : '' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold">{{ service.name }}</p>
+                  <p class="mt-1 text-xs leading-5" :style="serviceMetaStyle(modal.selectedServiceIds.includes(service.id))">
+                    {{ serviceCardDescription(service) }}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <p
+            v-if="!servicesLoading && modal.selectedServiceIds.length === 0"
+            class="rounded-[1rem] border px-4 py-3 text-sm"
+            style="border-color: rgba(180, 83, 9, 0.2); background: rgba(245, 158, 11, 0.12); color: rgb(146, 64, 14);"
+          >
+            Este profissional nao aparecera no agendamento publico ate ter ao menos um servico vinculado.
+          </p>
         </div>
         <p v-if="modal.error" class="text-sm" style="color: var(--color-danger);">{{ modal.error }}</p>
         <div class="flex justify-end gap-3 pt-2">
@@ -112,16 +176,28 @@ const {
   loading,
   error,
   fetchProfessionals,
+  getProfessional,
   createProfessional,
   updateProfessional,
   deleteProfessional,
+  updateServices,
 } = useProfessionals()
+
+const {
+  activeServices,
+  loading: servicesLoading,
+  error: servicesError,
+  fetchServices,
+  formatDuration,
+  formatPrice,
+} = useServices()
 
 const modal = reactive({
   open: false,
   id: '',
   name: '',
   phone: '',
+  selectedServiceIds: [] as string[],
   saving: false,
   error: '',
 })
@@ -142,15 +218,27 @@ function initialFor(name: string): string {
 }
 
 async function reload() {
-  await fetchProfessionals()
+  await Promise.all([fetchProfessionals(), fetchServices()])
 }
 
-function openModal(professional?: Professional) {
+async function openModal(professional?: Professional) {
   modal.open = true
+  modal.error = ''
   modal.id = professional?.id ?? ''
   modal.name = professional?.name ?? ''
   modal.phone = professional?.phone ?? ''
-  modal.error = ''
+  modal.selectedServiceIds = professional?.service_ids ? [...professional.service_ids] : []
+
+  if (professional?.id) {
+    try {
+      const detailed = await getProfessional(professional.id)
+      modal.name = detailed.name
+      modal.phone = detailed.phone ?? ''
+      modal.selectedServiceIds = [...detailed.service_ids]
+    } catch (e: any) {
+      modal.error = e?.data?.error?.message ?? 'Erro ao carregar os servicos do profissional.'
+    }
+  }
 }
 
 function closeModal() {
@@ -158,7 +246,77 @@ function closeModal() {
   modal.id = ''
   modal.name = ''
   modal.phone = ''
+  modal.selectedServiceIds = []
   modal.error = ''
+}
+
+function toggleService(serviceId: string) {
+  if (modal.selectedServiceIds.includes(serviceId)) {
+    modal.selectedServiceIds = modal.selectedServiceIds.filter(id => id !== serviceId)
+    return
+  }
+
+  modal.selectedServiceIds = [...modal.selectedServiceIds, serviceId]
+}
+
+function serviceCardDescription(service: { duration_minutes: number; price_cents: number | null }) {
+  return `${formatDuration(service.duration_minutes)} - ${formatPrice(service.price_cents)}`
+}
+
+function serviceOptionStyle(selected: boolean) {
+  if (selected) {
+    return {
+      background: 'rgba(var(--color-brand-primary-rgb), 0.08)',
+      borderColor: 'rgba(var(--color-brand-primary-rgb), 0.28)',
+      color: 'var(--color-text)',
+    }
+  }
+
+  return {
+    background: 'var(--color-surface-muted)',
+    borderColor: 'var(--color-border)',
+    color: 'var(--color-text)',
+  }
+}
+
+function serviceCheckStyle(selected: boolean) {
+  if (selected) {
+    return {
+      background: 'var(--color-brand-primary)',
+      borderColor: 'var(--color-brand-primary)',
+      color: 'var(--color-brand-on-primary)',
+    }
+  }
+
+  return {
+    background: 'transparent',
+    borderColor: 'var(--color-border-strong)',
+    color: 'transparent',
+  }
+}
+
+function serviceMetaStyle(selected: boolean) {
+  return {
+    color: selected ? 'var(--color-text-soft)' : 'var(--color-text-muted)',
+  }
+}
+
+function serviceSummary(professional: Professional) {
+  if (professional.service_ids.length === 0) {
+    return 'Sem servicos vinculados ao agendamento publico'
+  }
+
+  const names = professional.service_ids
+    .map(serviceId => activeServices.value.find(service => service.id === serviceId)?.name)
+    .filter((name): name is string => Boolean(name))
+
+  if (names.length === 0) {
+    return `${professional.service_ids.length} servico(s) vinculado(s)`
+  }
+
+  const preview = names.slice(0, 2).join(', ')
+  const remaining = names.length - 2
+  return remaining > 0 ? `${preview} e mais ${remaining}` : preview
 }
 
 async function handleSave() {
@@ -171,8 +329,11 @@ async function handleSave() {
     }
     if (modal.id) {
       await updateProfessional(modal.id, data)
+      await updateServices(modal.id, modal.selectedServiceIds)
     } else {
-      await createProfessional(data)
+      const created = await createProfessional(data)
+      modal.id = created.id
+      await updateServices(created.id, modal.selectedServiceIds)
     }
     closeModal()
   } catch (e: any) {

@@ -54,10 +54,11 @@ const props = withDefaults(defineProps<{
 })
 
 const steps = [
-  { step: 1, label: '1. Serviço' },
+  { step: 1, label: '1. Servico' },
   { step: 2, label: '2. Profissional' },
-  { step: 3, label: '3. Horário' },
-  { step: 4, label: '4. Confirmação' },
+  { step: 3, label: '3. Horario' },
+  { step: 4, label: '4. Dados' },
+  { step: 5, label: '5. Confirmacao' },
 ]
 
 const theme = computed(() => buildBrandTheme({

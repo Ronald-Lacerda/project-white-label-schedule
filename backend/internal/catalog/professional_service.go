@@ -14,8 +14,8 @@ type CalendarProvisioner interface {
 }
 
 type ProfessionalService struct {
-	repo    ProfessionalRepository
-	calSvc  CalendarProvisioner
+	repo   ProfessionalRepository
+	calSvc CalendarProvisioner
 }
 
 func NewProfessionalService(repo ProfessionalRepository) *ProfessionalService {
@@ -139,7 +139,7 @@ func (s *ProfessionalService) UpdateServices(ctx context.Context, id, establishm
 	if _, err := s.repo.FindByID(ctx, id, establishmentID); err != nil {
 		return err
 	}
-	return s.repo.SetServices(ctx, id, serviceIDs)
+	return s.repo.SetServices(ctx, id, establishmentID, serviceIDs)
 }
 
 type ProfessionalInput struct {

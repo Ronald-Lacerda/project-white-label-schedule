@@ -6,7 +6,9 @@ export interface ManagerAppointment {
   service_name: string
   duration_minutes: number
   client_name: string
+  client_email?: string
   client_phone: string
+  client_birth_date?: string
   starts_at: string
   ends_at: string
   status: 'confirmed' | 'completed' | 'no_show' | 'cancelled'

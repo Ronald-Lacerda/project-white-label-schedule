@@ -21,7 +21,9 @@ type ManagerAppointmentRow struct {
 	ServiceName      string    `db:"service_name" json:"service_name"`
 	DurationMinutes  int       `db:"duration_minutes" json:"duration_minutes"`
 	ClientName       string    `db:"client_name" json:"client_name"`
+	ClientEmail      *string   `db:"client_email" json:"client_email,omitempty"`
 	ClientPhone      string    `db:"client_phone" json:"client_phone"`
+	ClientBirthDate  *string   `db:"client_birth_date" json:"client_birth_date,omitempty"`
 	StartsAt         time.Time `db:"starts_at" json:"starts_at"`
 	EndsAt           time.Time `db:"ends_at" json:"ends_at"`
 	Status           string    `db:"status" json:"status"`
@@ -62,7 +64,9 @@ type Appointment struct {
 	ProfessionalID  string    `db:"professional_id"`
 	ServiceID       string    `db:"service_id"`
 	ClientName      string    `db:"client_name"`
+	ClientEmail     *string   `db:"client_email"`
 	ClientPhone     string    `db:"client_phone"`
+	ClientBirthDate *string   `db:"client_birth_date"`
 	StartsAt        time.Time `db:"starts_at"`
 	EndsAt          time.Time `db:"ends_at"`
 	Status          string    `db:"status"`
@@ -80,7 +84,9 @@ type CreateAppointmentInput struct {
 	ProfessionalID  string
 	StartsAt        time.Time
 	ClientName      string
+	ClientEmail     string
 	ClientPhone     string
+	ClientBirthDate string
 	IdempotencyKey  string
 }
 
@@ -100,14 +106,16 @@ type Slot struct {
 }
 
 type PublicAppointmentResult struct {
-	ID             string    `json:"id"`
-	ServiceID      string    `json:"service_id"`
-	ProfessionalID string    `json:"professional_id"`
-	ClientName     string    `json:"client_name"`
-	ClientPhone    string    `json:"client_phone"`
-	StartsAt       time.Time `json:"starts_at"`
-	EndsAt         time.Time `json:"ends_at"`
-	Status         string    `json:"status"`
+	ID              string    `json:"id"`
+	ServiceID       string    `json:"service_id"`
+	ProfessionalID  string    `json:"professional_id"`
+	ClientName      string    `json:"client_name"`
+	ClientEmail     *string   `json:"client_email,omitempty"`
+	ClientPhone     string    `json:"client_phone"`
+	ClientBirthDate *string   `json:"client_birth_date,omitempty"`
+	StartsAt        time.Time `json:"starts_at"`
+	EndsAt          time.Time `json:"ends_at"`
+	Status          string    `json:"status"`
 }
 
 type PublicAppointmentDetail struct {
@@ -115,7 +123,9 @@ type PublicAppointmentDetail struct {
 	ServiceID             string    `json:"service_id"`
 	ProfessionalID        string    `json:"professional_id"`
 	ClientName            string    `json:"client_name"`
+	ClientEmail           *string   `json:"client_email,omitempty"`
 	ClientPhone           string    `json:"client_phone"`
+	ClientBirthDate       *string   `json:"client_birth_date,omitempty"`
 	StartsAt              time.Time `json:"starts_at"`
 	EndsAt                time.Time `json:"ends_at"`
 	Status                string    `json:"status"`

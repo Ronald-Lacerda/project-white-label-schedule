@@ -110,7 +110,7 @@
 - [x] Pagina `/dashboard/professionals` - listagem com status ativo/inativo
 - [x] Modal/pagina de criacao e edicao de profissional
 - [ ] Secao de jornada de trabalho por dia da semana
-- [ ] Secao de selecao de servicos atendidos pelo profissional
+- [x] Secao de selecao de servicos atendidos pelo profissional
 
 ---
 

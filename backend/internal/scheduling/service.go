@@ -225,8 +225,10 @@ func (s *Service) CreatePublicAppointment(ctx context.Context, input CreateAppoi
 	}
 
 	input.ClientName = strings.TrimSpace(input.ClientName)
+	input.ClientEmail = strings.TrimSpace(input.ClientEmail)
 	input.ClientPhone = strings.TrimSpace(input.ClientPhone)
-	if input.ClientName == "" || input.ClientPhone == "" {
+	input.ClientBirthDate = strings.TrimSpace(input.ClientBirthDate)
+	if input.ClientName == "" || input.ClientEmail == "" || input.ClientPhone == "" || input.ClientBirthDate == "" {
 		return nil, shared.ErrInvalidInput
 	}
 
@@ -306,14 +308,16 @@ func (s *Service) CreatePublicAppointment(ctx context.Context, input CreateAppoi
 
 func toPublicAppointmentResult(appointment *Appointment) *PublicAppointmentResult {
 	return &PublicAppointmentResult{
-		ID:             appointment.ID,
-		ServiceID:      appointment.ServiceID,
-		ProfessionalID: appointment.ProfessionalID,
-		ClientName:     appointment.ClientName,
-		ClientPhone:    appointment.ClientPhone,
-		StartsAt:       appointment.StartsAt,
-		EndsAt:         appointment.EndsAt,
-		Status:         appointment.Status,
+		ID:              appointment.ID,
+		ServiceID:       appointment.ServiceID,
+		ProfessionalID:  appointment.ProfessionalID,
+		ClientName:      appointment.ClientName,
+		ClientEmail:     appointment.ClientEmail,
+		ClientPhone:     appointment.ClientPhone,
+		ClientBirthDate: appointment.ClientBirthDate,
+		StartsAt:        appointment.StartsAt,
+		EndsAt:          appointment.EndsAt,
+		Status:          appointment.Status,
 	}
 }
 
@@ -413,7 +417,9 @@ func (s *Service) ReschedulePublicAppointment(ctx context.Context, establishment
 		ProfessionalID:  current.ProfessionalID,
 		StartsAt:        newStartsAt.UTC(),
 		ClientName:      current.ClientName,
+		ClientEmail:     derefString(current.ClientEmail),
 		ClientPhone:     current.ClientPhone,
+		ClientBirthDate: derefString(current.ClientBirthDate),
 		IdempotencyKey:  idempotencyKey,
 	}
 
@@ -495,7 +501,9 @@ func toPublicAppointmentDetail(appointment *Appointment, minAdvanceCancelHours i
 		ServiceID:             appointment.ServiceID,
 		ProfessionalID:        appointment.ProfessionalID,
 		ClientName:            appointment.ClientName,
+		ClientEmail:           appointment.ClientEmail,
 		ClientPhone:           appointment.ClientPhone,
+		ClientBirthDate:       appointment.ClientBirthDate,
 		StartsAt:              appointment.StartsAt,
 		EndsAt:                appointment.EndsAt,
 		Status:                appointment.Status,
@@ -510,6 +518,13 @@ func canCancelAppointment(appointment *Appointment, minAdvanceCancelHours int) b
 	}
 	deadline := appointment.StartsAt.Add(-time.Duration(minAdvanceCancelHours) * time.Hour)
 	return time.Now().UTC().Before(deadline)
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 // ── Métodos do gestor (Fase 10) ────────────────────────────────────────────

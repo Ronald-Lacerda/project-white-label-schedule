@@ -18,124 +18,99 @@
       </AppSurface>
     </div>
 
-    <div v-else class="space-y-6">
-      <PublicHeader
-        :title="establishment.name"
-        subtitle="Escolha o servico, selecione o profissional e reserve um horario disponivel sem criar conta."
-        :logo-url="whitelabel?.logo_url"
-        :primary-color="whitelabel?.primary_color"
-        :secondary-color="whitelabel?.secondary_color"
-        :active-step="activeStep"
-      />
+    <div v-else class="space-y-6 pb-24">
+      <AppSurface tone="brand" padding="lg">
+        <div class="flex items-center justify-between gap-4" :style="brandThemeStyle({
+          primaryColor: whitelabel?.primary_color,
+          secondaryColor: whitelabel?.secondary_color,
+        })">
+          <div class="flex min-w-0 items-center gap-4">
+            <div
+              class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.4rem] border bg-white/85 shadow-sm"
+              style="border-color: rgba(var(--color-brand-primary-rgb), 0.14);"
+            >
+              <img
+                v-if="whitelabel?.logo_url"
+                :src="whitelabel.logo_url"
+                :alt="establishment.name"
+                class="h-full w-full object-cover"
+              />
+              <span
+                v-else
+                class="text-xs font-semibold uppercase tracking-[0.28em]"
+                style="color: var(--color-brand-primary);"
+              >
+                {{ establishment.name.slice(0, 2).toUpperCase() }}
+              </span>
+            </div>
 
-      <AppSurface tone="default" padding="lg">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div class="min-w-0">
+              <p class="ds-kicker">Agendamento online</p>
+              <h1 class="truncate text-2xl font-semibold" style="color: var(--color-text);">
+                {{ establishment.name }}
+              </h1>
+            </div>
+          </div>
+
+          <AppStatusPill tone="brand">Passo {{ activeStep }} de 5</AppStatusPill>
+        </div>
+      </AppSurface>
+
+      <AppSurface v-if="summaryItems.length" tone="default" padding="lg">
+        <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="ds-kicker">Consulta rapida</p>
-            <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">Consultar ou cancelar agendamento</h2>
+            <p class="ds-kicker">Resumo rapido</p>
+            <h2 class="mt-2 text-xl font-semibold" style="color: var(--color-text);">Seu agendamento em progresso</h2>
           </div>
-          <p class="text-sm" style="color: var(--color-text-muted);">Use o codigo e o telefone informados no agendamento.</p>
+          <AppStatusPill tone="brand">Resumo</AppStatusPill>
         </div>
 
-        <form class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="fetchAppointmentLookup">
-          <input v-model="lookupForm.id" type="text" class="ds-input" placeholder="Codigo do agendamento" />
-          <input v-model="lookupForm.phone" type="tel" class="ds-input" placeholder="Telefone" />
-          <AppButton type="submit" variant="primary" :disabled="lookupLoading">
-            {{ lookupLoading ? 'Buscando...' : 'Consultar' }}
-          </AppButton>
-        </form>
-
-        <div v-if="lookupError" class="mt-4 rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(191, 58, 54, 0.24); background: var(--color-danger-soft); color: var(--color-danger);">
-          {{ lookupError }}
-        </div>
-
-        <div v-if="lookupResult" class="mt-5 rounded-[1.5rem] border p-5" style="border-color: var(--color-border); background: var(--color-surface-muted);">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="grid gap-3 text-sm sm:grid-cols-2" style="color: var(--color-text-muted);">
-              <p><span class="font-semibold" style="color: var(--color-text);">Codigo:</span> {{ lookupResult.id }}</p>
-              <p><span class="font-semibold" style="color: var(--color-text);">Profissional:</span> {{ professionalName(lookupResult.professional_id) }}</p>
-              <p><span class="font-semibold" style="color: var(--color-text);">Data:</span> {{ formatDateLong(lookupResult.starts_at) }}</p>
-              <p><span class="font-semibold" style="color: var(--color-text);">Horario:</span> {{ formatTime(lookupResult.starts_at) }}</p>
-            </div>
-
-            <div class="flex flex-col items-start gap-3">
-              <AppStatusPill :tone="statusTone(lookupResult.status)">
-                {{ humanStatus(lookupResult.status) }}
-              </AppStatusPill>
-
-              <div v-if="lookupResult.can_cancel" class="flex flex-wrap gap-2">
-                <AppButton variant="danger" :disabled="cancelLoading" @click="cancelLookupAppointment">
-                  {{ cancelLoading ? 'Cancelando...' : 'Cancelar agendamento' }}
-                </AppButton>
-
-                <AppButton variant="secondary" @click="toggleReschedule">
-                  {{ rescheduleOpen ? 'Fechar reagendamento' : 'Reagendar' }}
-                </AppButton>
-              </div>
-
-              <p v-else class="max-w-xs text-sm" style="color: var(--color-text-muted);">
-                O cancelamento online exige antecedencia minima de {{ lookupResult.min_advance_cancel_hours }}h.
-              </p>
-            </div>
-          </div>
-
-          <div v-if="rescheduleOpen && lookupResult.can_cancel" class="mt-5 border-t pt-5" style="border-color: var(--color-border);">
-            <p class="text-sm font-semibold" style="color: var(--color-text);">Escolha um novo horario</p>
-            <p class="mt-1 text-sm" style="color: var(--color-text-muted);">
-              Vamos procurar disponibilidade para o mesmo servico e profissional.
-            </p>
-
-            <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <AppSelectableCard
-                v-for="date in dateOptions"
-                :key="`reschedule-${date.value}`"
-                :title="date.label"
-                :description="date.weekday"
-                :selected="rescheduleDate === date.value"
-                @select="rescheduleDate = date.value"
-              />
-            </div>
-
-            <div v-if="rescheduleError" class="mt-4 rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(191, 58, 54, 0.24); background: var(--color-danger-soft); color: var(--color-danger);">
-              {{ rescheduleError }}
-            </div>
-
-            <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <AppSelectableCard
-                v-for="slot in rescheduleSlotsForDate"
-                :key="`reschedule-slot-${slot.professional_id}-${slot.starts_at}`"
-                :title="formatTime(slot.starts_at)"
-                :description="professionalName(slot.professional_id)"
-                :selected="rescheduleSlotKey === `${slot.professional_id}-${slot.starts_at}`"
-                @select="selectRescheduleSlot(slot)"
-              />
-            </div>
-
-            <div v-if="rescheduleSlotsForDate.length === 0" class="mt-4 rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-              Nenhum horario disponivel para a data escolhida.
-            </div>
-
-            <AppButton class="mt-4" variant="primary" :disabled="!rescheduleSelectedSlot || rescheduleLoading" @click="submitReschedule">
-              {{ rescheduleLoading ? 'Reagendando...' : 'Confirmar novo horario' }}
-            </AppButton>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div
+            v-for="item in summaryItems"
+            :key="item.label"
+            class="rounded-[1.2rem] border p-4"
+            style="border-color: var(--color-border); background: var(--color-surface-muted);"
+          >
+            <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">{{ item.label }}</p>
+            <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">{{ item.value }}</p>
           </div>
         </div>
       </AppSurface>
 
-      <AppSurface tone="default" padding="lg">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="ds-kicker">Passo 1</p>
-            <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">Escolha o servico</h2>
+      <AppSurface v-if="bookingResult" tone="brand" padding="lg">
+        <p class="ds-kicker">Agendamento confirmado</p>
+        <h2 class="mt-2 font-display text-4xl font-semibold tracking-tight" style="color: var(--color-brand-text);">Tudo certo por aqui</h2>
+        <p class="mt-3 text-sm" style="color: var(--color-text-muted);">
+          Seu horario foi reservado e o codigo abaixo pode ser usado em contatos futuros com o estabelecimento.
+        </p>
+
+        <div class="mt-5 grid gap-3 text-sm md:grid-cols-2">
+          <p><span class="font-semibold">Codigo:</span> {{ bookingResult.id }}</p>
+          <p><span class="font-semibold">Servico:</span> {{ selectedService?.name }}</p>
+          <p><span class="font-semibold">Profissional:</span> {{ professionalName(bookingResult.professional_id) }}</p>
+          <p><span class="font-semibold">Data:</span> {{ formatDateLong(bookingResult.starts_at) }}</p>
+          <p><span class="font-semibold">Horario:</span> {{ formatTime(bookingResult.starts_at) }}</p>
+          <p><span class="font-semibold">Cliente:</span> {{ bookingForm.client_name }}</p>
+        </div>
+      </AppSurface>
+
+      <AppSurface v-else tone="default" padding="lg">
+        <div>
+          <p class="ds-kicker">Passo {{ currentStep }}</p>
+          <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">{{ currentStepContent.title }}</h2>
+          <p class="mt-2 text-sm" style="color: var(--color-text-muted);">{{ currentStepContent.description }}</p>
+        </div>
+
+        <div v-if="currentStep === 1" class="mt-6 space-y-4">
+          <div v-if="servicesLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+            Carregando servicos.
           </div>
-          <AppStatusPill v-if="servicesLoading" tone="info">Carregando</AppStatusPill>
-        </div>
 
-        <div v-if="services.length === 0" class="mt-4 rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-          Nenhum servico disponivel no momento.
-        </div>
+          <div v-else-if="services.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+            Nenhum servico disponivel no momento.
+          </div>
 
-        <div v-else class="mt-4 space-y-3">
           <AppSelectableCard
             v-for="service in services"
             :key="service.id"
@@ -152,28 +127,19 @@
             </template>
           </AppSelectableCard>
         </div>
-      </AppSurface>
 
-      <AppSurface tone="default" padding="lg">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="ds-kicker">Passo 2</p>
-            <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">Escolha o profissional</h2>
+        <div v-else-if="currentStep === 2" class="mt-6 space-y-3">
+          <div v-if="professionalsLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+            Carregando profissionais.
           </div>
-          <AppStatusPill v-if="professionalsLoading" tone="info">Carregando</AppStatusPill>
-        </div>
 
-        <p v-if="!selectedService" class="mt-4 text-sm" style="color: var(--color-text-muted);">
-          Selecione um servico para ver os profissionais disponiveis.
-        </p>
+          <div v-else-if="professionalsError" class="rounded-[1.2rem] border px-4 py-6 text-sm" style="border-color: rgba(191, 58, 54, 0.24); background: var(--color-danger-soft); color: var(--color-danger);">
+            {{ professionalsError }}
+          </div>
 
-        <div v-else class="mt-4 space-y-3">
-          <AppSelectableCard
-            title="Qualquer profissional disponivel"
-            description="Mostra os melhores horarios sem limitar a um nome especifico."
-            :selected="selectedProfessionalId === ''"
-            @select="selectedProfessionalId = ''"
-          />
+          <div v-else-if="professionals.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+            Nenhum profissional foi vinculado a este servico.
+          </div>
 
           <AppSelectableCard
             v-for="professional in professionals"
@@ -181,109 +147,165 @@
             :title="professional.name"
             :description="selectedProfessionalId === professional.id ? 'Selecionado para este agendamento.' : 'Disponivel para este servico.'"
             :selected="selectedProfessionalId === professional.id"
-            @select="selectedProfessionalId = professional.id"
+            @select="selectProfessional(professional.id)"
+          />
+        </div>
+
+        <div v-else-if="currentStep === 3" class="mt-6 space-y-6">
+          <section class="space-y-3 rounded-[1.4rem] border p-4 sm:p-5" style="border-color: var(--color-border); background: var(--color-surface-muted);">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold" style="color: var(--color-text);">Escolha o dia</p>
+                <p class="mt-1 text-xs" style="color: var(--color-text-muted);">
+                  Primeiro selecione a data para ver os horarios disponiveis.
+                </p>
+              </div>
+              <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em]" style="background: rgba(var(--color-brand-primary-rgb), 0.08); color: var(--color-brand-primary);">
+                Datas
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <AppSelectableCard
+                v-for="date in dateOptions"
+                :key="date.value"
+                :title="date.label"
+                :description="date.weekday"
+                :selected="selectedDate === date.value"
+                @select="selectedDate = date.value"
+              />
+            </div>
+          </section>
+
+          <section class="space-y-3 rounded-[1.4rem] border p-4 sm:p-5" style="border-color: var(--color-border); background: var(--color-surface);">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold" style="color: var(--color-text);">Horarios livres</p>
+                <p class="mt-1 text-xs" style="color: var(--color-text-muted);">
+                  {{ selectedDateLabel }}
+                </p>
+              </div>
+              <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em]" style="background: rgba(15, 23, 42, 0.05); color: var(--color-text-soft);">
+                Horarios
+              </span>
+            </div>
+
+            <div v-if="availabilityLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+              Buscando horarios disponiveis.
+            </div>
+
+            <div v-else-if="availabilityError" class="rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(184, 107, 22, 0.24); background: var(--color-warning-soft); color: var(--color-warning);">
+              {{ availabilityError }}
+            </div>
+
+            <div v-else-if="slotsForSelectedDate.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
+              Nenhum horario disponivel para a data selecionada.
+            </div>
+
+            <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <AppSelectableCard
+                v-for="slot in slotsForSelectedDate"
+                :key="`${slot.professional_id}-${slot.starts_at}`"
+                :title="formatTime(slot.starts_at)"
+                :selected="selectedSlotKey === `${slot.professional_id}-${slot.starts_at}`"
+                @select="selectSlot(slot)"
+              />
+            </div>
+          </section>
+        </div>
+
+        <div v-else-if="currentStep === 4" class="mt-6 space-y-4">
+          <div
+            v-for="field in customerFields"
+            :key="field.key"
+          >
+            <label class="ds-label" :for="field.key">{{ field.label }}</label>
+            <input
+              :id="field.key"
+              v-model="bookingForm[field.key]"
+              :type="field.type"
+              :autocomplete="field.autocomplete"
+              :placeholder="field.placeholder"
+              class="ds-input"
+            />
+          </div>
+
+          <div v-if="stepError" class="rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(191, 58, 54, 0.24); background: var(--color-danger-soft); color: var(--color-danger);">
+            {{ stepError }}
+          </div>
+        </div>
+
+        <div v-else class="mt-6 space-y-6">
+          <BookingSummary
+            v-if="selectedService && selectedSlot"
+            title="Revise antes de confirmar"
+            badge="Ultimo passo"
+            :service-name="selectedService.name"
+            :professional-name="professionalName(selectedSlot.professional_id)"
+            :date-label="formatDateLong(selectedSlot.starts_at)"
+            :time-label="formatTime(selectedSlot.starts_at)"
           />
 
-          <div
-            v-if="selectedService && !professionalsLoading && professionals.length === 0"
-            class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm"
-            style="border-color: var(--color-border); color: var(--color-text-muted);"
-          >
-            Nenhum profissional foi vinculado a este servico ainda.
-          </div>
-        </div>
-      </AppSurface>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Dados pessoais</p>
+              <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">{{ bookingForm.client_name }}</p>
+              <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ bookingForm.client_email }}</p>
+              <p class="mt-1 text-sm" style="color: var(--color-text-muted);">{{ bookingForm.client_phone }}</p>
+              <p class="mt-1 text-sm" style="color: var(--color-text-muted);">Nascimento: {{ formatBirthDate(bookingForm.client_birth_date) }}</p>
+            </div>
 
-      <AppSurface tone="default" padding="lg">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="ds-kicker">Passo 3</p>
-            <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">Escolha o horario</h2>
-          </div>
-          <AppStatusPill v-if="availabilityLoading" tone="info">Buscando horarios</AppStatusPill>
-        </div>
-
-        <p v-if="!selectedService" class="mt-4 text-sm" style="color: var(--color-text-muted);">
-          O calendario de horarios aparece depois da escolha do servico.
-        </p>
-
-        <div v-else class="mt-4 space-y-5">
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <AppSelectableCard
-              v-for="date in dateOptions"
-              :key="date.value"
-              :title="date.label"
-              :description="date.weekday"
-              :selected="selectedDate === date.value"
-              @select="selectedDate = date.value"
-            />
-          </div>
-
-          <div v-if="availabilityError" class="rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(184, 107, 22, 0.24); background: var(--color-warning-soft); color: var(--color-warning);">
-            {{ availabilityError }}
-          </div>
-
-          <div v-if="slotsForSelectedDate.length === 0 && !availabilityLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-            Nenhum horario disponivel para a data selecionada.
-          </div>
-
-          <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <AppSelectableCard
-              v-for="slot in slotsForSelectedDate"
-              :key="`${slot.professional_id}-${slot.starts_at}`"
-              :title="formatTime(slot.starts_at)"
-              :description="professionalName(slot.professional_id)"
-              :selected="selectedSlotKey === `${slot.professional_id}-${slot.starts_at}`"
-              @select="selectSlot(slot)"
-            />
-          </div>
-        </div>
-      </AppSurface>
-
-      <BookingSummary
-        v-if="selectedService && selectedSlot"
-        :service-name="selectedService.name"
-        :professional-name="professionalName(selectedSlot.professional_id)"
-        :date-label="formatDateLong(selectedSlot.starts_at)"
-        :time-label="formatTime(selectedSlot.starts_at)"
-      />
-
-      <AppSurface v-if="selectedService && selectedSlot && !bookingResult" tone="default" padding="lg">
-        <div>
-          <p class="ds-kicker">Passo 4</p>
-          <h2 class="mt-2 text-2xl font-semibold" style="color: var(--color-text);">Seus dados</h2>
-        </div>
-
-        <form class="mt-5 space-y-4" @submit.prevent="submitAppointment">
-          <div>
-            <label class="ds-label">Nome</label>
-            <input v-model="bookingForm.client_name" type="text" required class="ds-input" placeholder="Seu nome completo" />
-          </div>
-          <div>
-            <label class="ds-label">Telefone</label>
-            <input v-model="bookingForm.client_phone" type="tel" required class="ds-input" placeholder="(11) 99999-9999" />
+            <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Como funciona</p>
+              <p class="mt-2 text-sm" style="color: var(--color-text-muted);">
+                Ao confirmar, vamos reservar o horario imediatamente e mostrar a tela final com o codigo do agendamento.
+              </p>
+            </div>
           </div>
 
           <div v-if="bookingError" class="rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(191, 58, 54, 0.24); background: var(--color-danger-soft); color: var(--color-danger);">
             {{ bookingError }}
           </div>
-
-          <AppButton type="submit" variant="primary" block :disabled="bookingLoading">
-            {{ bookingLoading ? 'Confirmando agendamento...' : 'Confirmar agendamento' }}
-          </AppButton>
-        </form>
-      </AppSurface>
-
-      <AppSurface v-if="bookingResult" tone="brand" padding="lg">
-        <p class="ds-kicker">Passo concluido</p>
-        <h2 class="mt-2 font-display text-4xl font-semibold tracking-tight" style="color: var(--color-brand-text);">Agendamento confirmado</h2>
-        <div class="mt-5 grid gap-3 text-sm md:grid-cols-2">
-          <p><span class="font-semibold">Codigo:</span> {{ bookingResult.id }}</p>
-          <p><span class="font-semibold">Servico:</span> {{ selectedService?.name }}</p>
-          <p><span class="font-semibold">Profissional:</span> {{ professionalName(bookingResult.professional_id) }}</p>
-          <p><span class="font-semibold">Data:</span> {{ formatDateLong(bookingResult.starts_at) }}</p>
         </div>
       </AppSurface>
+
+      <div v-if="!bookingResult" class="sticky bottom-4 z-20">
+        <AppSurface tone="default" padding="lg">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm" style="color: var(--color-text-muted);">
+              {{ currentStepContent.footer }}
+            </div>
+
+            <div class="flex gap-2">
+              <AppButton
+                v-if="currentStep > 1"
+                variant="secondary"
+                @click="goBack"
+              >
+                Voltar
+              </AppButton>
+
+              <AppButton
+                v-if="currentStep < 5"
+                variant="primary"
+                :disabled="!canContinue"
+                @click="goNext"
+              >
+                Continuar
+              </AppButton>
+
+              <AppButton
+                v-else
+                variant="primary"
+                :disabled="bookingLoading || !selectedSlot"
+                @click="submitAppointment"
+              >
+                {{ bookingLoading ? 'Confirmando...' : 'Confirmar agendamento' }}
+              </AppButton>
+            </div>
+          </div>
+        </AppSurface>
+      </div>
     </div>
   </div>
 </template>
@@ -325,6 +347,13 @@ interface ProfessionalItem {
   name: string
 }
 
+interface ProfessionalItemResponse {
+  id?: string
+  name?: string
+  ID?: string
+  Name?: string
+}
+
 interface SlotItem {
   starts_at: string
   ends_at: string
@@ -336,16 +365,52 @@ interface BookingResult {
   service_id: string
   professional_id: string
   client_name: string
+  client_email?: string
   client_phone: string
+  client_birth_date?: string
   starts_at: string
   ends_at: string
   status: string
 }
 
-interface LookupResult extends BookingResult {
-  can_cancel: boolean
-  min_advance_cancel_hours: number
-}
+type BookingFormKey = 'client_name' | 'client_email' | 'client_phone' | 'client_birth_date'
+
+const customerFields: Array<{
+  key: BookingFormKey
+  label: string
+  type: string
+  placeholder: string
+  autocomplete: string
+}> = [
+  {
+    key: 'client_name',
+    label: 'Nome',
+    type: 'text',
+    placeholder: 'Seu nome completo',
+    autocomplete: 'name',
+  },
+  {
+    key: 'client_email',
+    label: 'Email',
+    type: 'email',
+    placeholder: 'voce@exemplo.com',
+    autocomplete: 'email',
+  },
+  {
+    key: 'client_phone',
+    label: 'Telefone',
+    type: 'tel',
+    placeholder: '(11) 99999-9999',
+    autocomplete: 'tel',
+  },
+  {
+    key: 'client_birth_date',
+    label: 'Data de nascimento',
+    type: 'date',
+    placeholder: '',
+    autocomplete: 'bday',
+  },
+]
 
 const { data: response, pending, error } = useFetch<{ data: PublicResponse }>(
   `${config.public.apiBaseUrl}/pub/${slug}`,
@@ -365,13 +430,13 @@ const establishment = computed(() => response.value?.data?.establishment ?? null
 const whitelabel = computed(() => response.value?.data?.whitelabel ?? null)
 const services = computed(() => servicesResponse.value?.data ?? [])
 
+const currentStep = ref(1)
 const professionals = ref<ProfessionalItem[]>([])
 const professionalsLoading = ref(false)
-
+const professionalsError = ref('')
 const availabilityByDate = ref<Record<string, SlotItem[]>>({})
 const availabilityLoading = ref(false)
 const availabilityError = ref('')
-
 const selectedServiceId = ref('')
 const selectedProfessionalId = ref('')
 const selectedDate = ref('')
@@ -380,32 +445,16 @@ const selectedSlot = ref<SlotItem | null>(null)
 const bookingResult = ref<BookingResult | null>(null)
 const bookingLoading = ref(false)
 const bookingError = ref('')
-const bookingForm = reactive({
+const stepError = ref('')
+const bookingForm = reactive<Record<BookingFormKey, string>>({
   client_name: '',
+  client_email: '',
   client_phone: '',
+  client_birth_date: '',
 })
-const lookupLoading = ref(false)
-const lookupError = ref('')
-const cancelLoading = ref(false)
-const lookupResult = ref<LookupResult | null>(null)
-const lookupForm = reactive({
-  id: '',
-  phone: '',
-})
-const rescheduleOpen = ref(false)
-const rescheduleLoading = ref(false)
-const rescheduleError = ref('')
-const rescheduleDate = ref('')
-const rescheduleAvailabilityByDate = ref<Record<string, SlotItem[]>>({})
-const rescheduleSelectedSlot = ref<SlotItem | null>(null)
-const rescheduleSlotKey = ref('')
 
 const selectedService = computed(() => services.value.find(service => service.id === selectedServiceId.value) ?? null)
-const activeStep = computed(() => {
-  if (bookingResult.value || selectedSlot.value) return 4
-  if (selectedService.value) return 3
-  return 1
-})
+const activeStep = computed(() => bookingResult.value ? 5 : currentStep.value)
 
 const dateOptions = computed(() => {
   const formatterWeekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
@@ -424,7 +473,76 @@ const dateOptions = computed(() => {
 })
 
 const slotsForSelectedDate = computed(() => availabilityByDate.value[selectedDate.value] ?? [])
-const rescheduleSlotsForDate = computed(() => rescheduleAvailabilityByDate.value[rescheduleDate.value] ?? [])
+
+const selectedDateLabel = computed(() => {
+  const selected = dateOptions.value.find(date => date.value === selectedDate.value)
+  if (!selected) {
+    return 'Selecione uma data para continuar.'
+  }
+
+  return `${selected.label} - ${selected.weekday}`
+})
+
+const currentStepContent = computed(() => {
+  return {
+    1: {
+      title: 'Escolha o servico',
+      description: 'Selecione o atendimento que voce quer agendar.',
+      footer: 'Escolha um servico para seguir.',
+    },
+    2: {
+      title: 'Escolha o profissional',
+      description: 'Nesta jornada o profissional e obrigatorio antes da busca de horarios.',
+      footer: 'Selecione quem vai realizar o atendimento.',
+    },
+    3: {
+      title: 'Escolha o horario',
+      description: 'Mostramos apenas horarios disponiveis para o servico e profissional escolhidos.',
+      footer: 'Escolha uma data e um horario disponivel.',
+    },
+    4: {
+      title: 'Seus dados',
+      description: 'Agora so faltam seus dados para finalizar a reserva com seguranca.',
+      footer: 'Preencha nome, email, telefone e nascimento.',
+    },
+    5: {
+      title: 'Confirme seu agendamento',
+      description: 'Revise tudo antes de reservar o horario.',
+      footer: 'Se estiver tudo certo, confirme agora.',
+    },
+  }[currentStep.value]!
+})
+
+const summaryItems = computed(() => {
+  const items: Array<{ label: string; value: string }> = []
+
+  if (bookingForm.client_name) items.push({ label: 'Cliente', value: bookingForm.client_name })
+  if (selectedService.value) items.push({ label: 'Servico', value: selectedService.value.name })
+  if (selectedProfessionalId.value) items.push({ label: 'Profissional', value: professionalName(selectedProfessionalId.value) })
+  if (selectedSlot.value) {
+    items.push({ label: 'Data', value: formatDateLong(selectedSlot.value.starts_at) })
+    items.push({ label: 'Horario', value: formatTime(selectedSlot.value.starts_at) })
+  }
+
+  return items
+})
+
+const isDataStepValid = computed(() => {
+  return (
+    bookingForm.client_name.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingForm.client_email.trim()) &&
+    bookingForm.client_phone.trim().length > 0 &&
+    bookingForm.client_birth_date.trim().length > 0
+  )
+})
+
+const canContinue = computed(() => {
+  if (currentStep.value === 1) return Boolean(selectedService.value)
+  if (currentStep.value === 2) return Boolean(selectedProfessionalId.value)
+  if (currentStep.value === 3) return Boolean(selectedSlot.value)
+  if (currentStep.value === 4) return isDataStepValid.value
+  return Boolean(selectedSlot.value)
+})
 
 watchEffect(() => {
   applyBrandTheme({
@@ -443,20 +561,13 @@ watchEffect(() => {
   }
 })
 
-watchEffect(() => {
-  if (!rescheduleDate.value && dateOptions.value.length > 0) {
-    rescheduleDate.value = dateOptions.value[0].value
-  }
-})
-
 watch(selectedServiceId, async (newServiceId) => {
   selectedProfessionalId.value = ''
-  selectedSlotKey.value = ''
   selectedSlot.value = null
-  bookingResult.value = null
-  bookingError.value = ''
+  selectedSlotKey.value = ''
   availabilityByDate.value = {}
   availabilityError.value = ''
+  professionalsError.value = ''
 
   if (!newServiceId) {
     professionals.value = []
@@ -464,24 +575,21 @@ watch(selectedServiceId, async (newServiceId) => {
   }
 
   await fetchProfessionals(newServiceId)
-  await fetchAvailability()
 })
 
-watch(selectedProfessionalId, async () => {
-  selectedSlotKey.value = ''
+watch(selectedProfessionalId, async (newProfessionalId) => {
   selectedSlot.value = null
-  bookingResult.value = null
-  bookingError.value = ''
+  selectedSlotKey.value = ''
+  availabilityByDate.value = {}
+  availabilityError.value = ''
 
-  if (!selectedServiceId.value) return
+  if (!selectedServiceId.value || !newProfessionalId) return
   await fetchAvailability()
 })
 
 watch(selectedDate, () => {
-  selectedSlotKey.value = ''
   selectedSlot.value = null
-  bookingResult.value = null
-  bookingError.value = ''
+  selectedSlotKey.value = ''
 })
 
 function metaStyle(selected: boolean) {
@@ -494,48 +602,78 @@ function selectService(service: ServiceItem) {
   selectedServiceId.value = service.id
 }
 
+function selectProfessional(professionalId: string) {
+  selectedProfessionalId.value = professionalId
+}
+
 function selectSlot(slot: SlotItem) {
   selectedSlot.value = slot
   selectedSlotKey.value = `${slot.professional_id}-${slot.starts_at}`
-  bookingResult.value = null
+}
+
+function goBack() {
+  stepError.value = ''
   bookingError.value = ''
+  if (currentStep.value > 1) currentStep.value -= 1
+}
+
+function goNext() {
+  stepError.value = ''
+
+  if (currentStep.value === 4 && !isDataStepValid.value) {
+    stepError.value = 'Preencha nome, email, telefone e data de nascimento para continuar.'
+    return
+  }
+
+  if (!canContinue.value) return
+
+  if (currentStep.value < 5) currentStep.value += 1
 }
 
 async function fetchProfessionals(serviceId: string) {
   professionalsLoading.value = true
+  professionalsError.value = ''
+  professionals.value = []
+
   try {
-    const data = await $fetch<{ data: ProfessionalItem[] }>(
+    const data = await $fetch<{ data: ProfessionalItemResponse[] }>(
       `${config.public.apiBaseUrl}/pub/${slug}/professionals`,
       {
         query: { service_id: serviceId },
       },
     )
-    professionals.value = data.data
+    professionals.value = Array.isArray(data.data)
+      ? data.data
+          .map((professional) => ({
+            id: professional.id ?? professional.ID ?? '',
+            name: professional.name ?? professional.Name ?? '',
+          }))
+          .filter((professional) => professional.id && professional.name)
+      : []
+  } catch (err: any) {
+    professionalsError.value = err?.data?.error?.message ?? 'Nao foi possivel carregar os profissionais para este servico.'
   } finally {
     professionalsLoading.value = false
   }
 }
 
 async function fetchAvailability() {
-  if (!selectedServiceId.value) return
+  if (!selectedServiceId.value || !selectedProfessionalId.value) return
 
   availabilityLoading.value = true
   availabilityError.value = ''
 
   try {
-    const query: Record<string, string> = {
-      service_id: selectedServiceId.value,
-      date_from: dateOptions.value[0]?.value ?? selectedDate.value,
-      date_to: dateOptions.value[dateOptions.value.length - 1]?.value ?? selectedDate.value,
-    }
-
-    if (selectedProfessionalId.value) {
-      query.professional_id = selectedProfessionalId.value
-    }
-
     const data = await $fetch<{ data: Record<string, SlotItem[]> }>(
       `${config.public.apiBaseUrl}/pub/${slug}/availability`,
-      { query },
+      {
+        query: {
+          service_id: selectedServiceId.value,
+          professional_id: selectedProfessionalId.value,
+          date_from: dateOptions.value[0]?.value ?? selectedDate.value,
+          date_to: dateOptions.value[dateOptions.value.length - 1]?.value ?? selectedDate.value,
+        },
+      },
     )
 
     availabilityByDate.value = data.data
@@ -564,20 +702,15 @@ async function submitAppointment() {
           professional_id: selectedSlot.value.professional_id,
           starts_at: selectedSlot.value.starts_at,
           client_name: bookingForm.client_name,
+          client_email: bookingForm.client_email,
           client_phone: bookingForm.client_phone,
+          client_birth_date: bookingForm.client_birth_date,
           idempotency_key: idempotencyKey,
         },
       },
     )
 
     bookingResult.value = data.data
-    lookupResult.value = {
-      ...data.data,
-      can_cancel: true,
-      min_advance_cancel_hours: 0,
-    }
-    lookupForm.id = data.data.id
-    lookupForm.phone = data.data.client_phone
     await fetchAvailability()
   } catch (err: any) {
     bookingError.value = err?.data?.error?.message ?? 'Nao foi possivel concluir o agendamento.'
@@ -586,131 +719,8 @@ async function submitAppointment() {
   }
 }
 
-async function fetchAppointmentLookup() {
-  lookupLoading.value = true
-  lookupError.value = ''
-
-  try {
-    const data = await $fetch<{ data: LookupResult }>(
-      `${config.public.apiBaseUrl}/pub/${slug}/appointments/${lookupForm.id}`,
-      {
-        query: { phone: lookupForm.phone },
-      },
-    )
-    lookupResult.value = data.data
-    rescheduleOpen.value = false
-    rescheduleError.value = ''
-    rescheduleAvailabilityByDate.value = {}
-    rescheduleSelectedSlot.value = null
-    rescheduleSlotKey.value = ''
-  } catch (err: any) {
-    lookupResult.value = null
-    lookupError.value = err?.data?.error?.message ?? 'Nao foi possivel localizar o agendamento.'
-  } finally {
-    lookupLoading.value = false
-  }
-}
-
-async function cancelLookupAppointment() {
-  if (!lookupResult.value) return
-
-  cancelLoading.value = true
-  lookupError.value = ''
-
-  try {
-    const data = await $fetch<{ data: LookupResult }>(
-      `${config.public.apiBaseUrl}/pub/${slug}/appointments/${lookupResult.value.id}/cancel`,
-      {
-        method: 'PATCH',
-        body: { phone: lookupForm.phone },
-      },
-    )
-    lookupResult.value = data.data
-    rescheduleOpen.value = false
-    await fetchAvailability()
-  } catch (err: any) {
-    lookupError.value = err?.data?.error?.message ?? 'Nao foi possivel cancelar o agendamento.'
-  } finally {
-    cancelLoading.value = false
-  }
-}
-
-async function toggleReschedule() {
-  rescheduleOpen.value = !rescheduleOpen.value
-  rescheduleError.value = ''
-
-  if (!rescheduleOpen.value || !lookupResult.value) return
-
-  rescheduleSelectedSlot.value = null
-  rescheduleSlotKey.value = ''
-  await fetchRescheduleAvailability()
-}
-
-async function fetchRescheduleAvailability() {
-  if (!lookupResult.value) return
-
-  rescheduleError.value = ''
-
-  try {
-    const query: Record<string, string> = {
-      service_id: lookupResult.value.service_id,
-      professional_id: lookupResult.value.professional_id,
-      date_from: dateOptions.value[0]?.value ?? '',
-      date_to: dateOptions.value[dateOptions.value.length - 1]?.value ?? '',
-    }
-
-    const data = await $fetch<{ data: Record<string, SlotItem[]> }>(
-      `${config.public.apiBaseUrl}/pub/${slug}/availability`,
-      { query },
-    )
-
-    rescheduleAvailabilityByDate.value = data.data
-  } catch (err: any) {
-    rescheduleAvailabilityByDate.value = {}
-    rescheduleError.value = err?.data?.error?.message ?? 'Nao foi possivel carregar horarios para reagendamento.'
-  }
-}
-
-function selectRescheduleSlot(slot: SlotItem) {
-  rescheduleSelectedSlot.value = slot
-  rescheduleSlotKey.value = `${slot.professional_id}-${slot.starts_at}`
-}
-
-async function submitReschedule() {
-  if (!lookupResult.value || !rescheduleSelectedSlot.value) return
-
-  rescheduleLoading.value = true
-  rescheduleError.value = ''
-
-  try {
-    const data = await $fetch<{ data: BookingResult }>(
-      `${config.public.apiBaseUrl}/pub/${slug}/appointments/${lookupResult.value.id}/reschedule`,
-      {
-        method: 'PATCH',
-        body: {
-          phone: lookupForm.phone,
-          starts_at: rescheduleSelectedSlot.value.starts_at,
-        },
-      },
-    )
-
-    lookupForm.id = data.data.id
-    const refreshed = await $fetch<{ data: LookupResult }>(
-      `${config.public.apiBaseUrl}/pub/${slug}/appointments/${data.data.id}`,
-      {
-        query: { phone: lookupForm.phone },
-      },
-    )
-    lookupResult.value = refreshed.data
-    rescheduleOpen.value = false
-    rescheduleSelectedSlot.value = null
-    rescheduleSlotKey.value = ''
-    await fetchAvailability()
-  } catch (err: any) {
-    rescheduleError.value = err?.data?.error?.message ?? 'Nao foi possivel reagendar.'
-  } finally {
-    rescheduleLoading.value = false
-  }
+function professionalName(professionalId: string) {
+  return professionals.value.find(professional => professional.id === professionalId)?.name ?? 'Profissional selecionado'
 }
 
 function formatPrice(priceCents: number | null) {
@@ -718,51 +728,41 @@ function formatPrice(priceCents: number | null) {
   return (priceCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function formatDuration(minutes: number) {
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  return remainingMinutes === 0 ? `${hours}h` : `${hours}h ${remainingMinutes}min`
+function formatDuration(durationMinutes: number) {
+  if (durationMinutes >= 60 && durationMinutes % 60 === 0) {
+    const hours = durationMinutes / 60
+    return hours === 1 ? '1 hora' : `${hours} horas`
+  }
+
+  if (durationMinutes > 60) {
+    const hours = Math.floor(durationMinutes / 60)
+    const minutes = durationMinutes % 60
+    return `${hours}h ${minutes}min`
+  }
+
+  return `${durationMinutes} min`
 }
 
-function formatTime(isoString: string) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(isoString))
-}
-
-function formatDateLong(isoString: string) {
-  return new Intl.DateTimeFormat('pt-BR', {
+function formatDateLong(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
-  }).format(new Date(isoString))
+  })
 }
 
-function professionalName(professionalId: string) {
-  if (!professionalId) return 'Qualquer profissional'
-  return professionals.value.find(professional => professional.id === professionalId)?.name ?? 'Profissional'
+function formatBirthDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
-function humanStatus(status: string) {
-  if (status === 'confirmed') return 'Confirmado'
-  if (status === 'cancelled') return 'Cancelado'
-  if (status === 'completed') return 'Concluido'
-  if (status === 'no_show') return 'Nao compareceu'
-  return status
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
-
-function statusTone(status: string) {
-  return {
-    confirmed: 'info',
-    cancelled: 'danger',
-    completed: 'success',
-    no_show: 'warning',
-  }[status] as 'info' | 'danger' | 'success' | 'warning'
-}
-
-useHead(() => ({
-  title: establishment.value?.name ?? 'Agendamento',
-}))
 </script>

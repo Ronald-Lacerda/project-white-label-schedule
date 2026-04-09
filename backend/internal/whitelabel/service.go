@@ -15,12 +15,34 @@ func (s *Service) Get(ctx context.Context, establishmentID string) (*Config, err
 }
 
 func (s *Service) Update(ctx context.Context, establishmentID string, input UpdateInput) (*Config, error) {
+	existing, err := s.repo.FindByEstablishment(ctx, establishmentID)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		EstablishmentID: establishmentID,
-		LogoURL:         input.LogoURL,
-		PrimaryColor:    input.PrimaryColor,
-		SecondaryColor:  input.SecondaryColor,
-		CustomCSS:       input.CustomCSS,
+		LogoURL:         existing.LogoURL,
+		PrimaryColor:    existing.PrimaryColor,
+		SecondaryColor:  existing.SecondaryColor,
+		CustomCSS:       existing.CustomCSS,
+		CustomDomain:    existing.CustomDomain,
+	}
+
+	if input.LogoURL != nil {
+		cfg.LogoURL = input.LogoURL
+	}
+
+	if input.PrimaryColor != "" {
+		cfg.PrimaryColor = input.PrimaryColor
+	}
+
+	if input.SecondaryColor != nil {
+		cfg.SecondaryColor = input.SecondaryColor
+	}
+
+	if input.CustomCSS != nil {
+		cfg.CustomCSS = input.CustomCSS
 	}
 
 	if cfg.PrimaryColor == "" {

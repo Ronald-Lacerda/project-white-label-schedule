@@ -3,6 +3,7 @@ export interface Professional {
   name: string
   avatar_url: string | null
   phone: string | null
+  service_ids: string[]
   display_order: number
   active: boolean
   created_at: string
@@ -24,7 +25,12 @@ export function useProfessionals() {
   const error = ref('')
 
   function normalizeProfessionals(data: Professional[] | null | undefined): Professional[] {
-    return Array.isArray(data) ? data : []
+    return Array.isArray(data)
+      ? data.map(professional => ({
+          ...professional,
+          service_ids: Array.isArray(professional.service_ids) ? professional.service_ids : [],
+        }))
+      : []
   }
 
   async function fetchProfessionals() {
@@ -42,15 +48,26 @@ export function useProfessionals() {
 
   async function createProfessional(data: { name: string; phone?: string; display_order?: number }) {
     const p = await api.post<Professional>('/api/v1/professionals', data)
-    professionals.value.push(p)
-    return p
+    const normalized = normalizeProfessionals([p])[0]
+    professionals.value.push(normalized)
+    return normalized
   }
 
   async function updateProfessional(id: string, data: Partial<Professional>) {
     const p = await api.put<Professional>(`/api/v1/professionals/${id}`, data)
+    const normalized = normalizeProfessionals([p])[0]
     const idx = professionals.value.findIndex(x => x.id === id)
-    if (idx !== -1) professionals.value[idx] = p
-    return p
+    if (idx !== -1) professionals.value[idx] = normalized
+    return normalized
+  }
+
+  async function getProfessional(id: string) {
+    const professional = normalizeProfessionals([await api.get<Professional>(`/api/v1/professionals/${id}`)])[0]
+    const idx = professionals.value.findIndex(item => item.id === id)
+    if (idx !== -1) {
+      professionals.value[idx] = professional
+    }
+    return professional
   }
 
   async function deleteProfessional(id: string) {
@@ -64,6 +81,13 @@ export function useProfessionals() {
 
   async function updateServices(id: string, serviceIds: string[]) {
     await api.put(`/api/v1/professionals/${id}/services`, { service_ids: serviceIds })
+    const idx = professionals.value.findIndex(item => item.id === id)
+    if (idx !== -1) {
+      professionals.value[idx] = {
+        ...professionals.value[idx],
+        service_ids: [...serviceIds],
+      }
+    }
   }
 
   return {
@@ -71,6 +95,7 @@ export function useProfessionals() {
     loading,
     error,
     fetchProfessionals,
+    getProfessional,
     createProfessional,
     updateProfessional,
     deleteProfessional,

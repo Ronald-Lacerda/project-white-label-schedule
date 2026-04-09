@@ -9,6 +9,7 @@ type Professional struct {
 	AvatarURL        *string   `db:"avatar_url"         json:"avatar_url"`
 	Phone            *string   `db:"phone"              json:"phone"`
 	GoogleCalendarID *string   `db:"google_calendar_id" json:"google_calendar_id"`
+	ServiceIDs       []string  `db:"-"                  json:"service_ids"`
 	DisplayOrder     int       `db:"display_order"      json:"display_order"`
 	Active           bool      `db:"active"             json:"active"`
 	CreatedAt        time.Time `db:"created_at"         json:"created_at"`
