@@ -31,6 +31,13 @@ type CreateAccountInput struct {
 	ContactPhone      *string
 }
 
+type businessHourSeed struct {
+	DayOfWeek int
+	OpenTime  string
+	CloseTime string
+	IsClosed  bool
+}
+
 func NewRepository(db *sqlx.DB) Repository {
 	return &repository{db: db}
 }
@@ -137,6 +144,22 @@ func (r *repository) CreateAccount(ctx context.Context, input CreateAccountInput
 		return nil, err
 	}
 
+	for _, hour := range defaultBusinessHourSeeds() {
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO business_hours (id, establishment_id, day_of_week, open_time, close_time, is_closed)
+			VALUES (?, ?, ?, ?, ?, ?)`,
+			shared.NewID(),
+			establishmentID,
+			hour.DayOfWeek,
+			hour.OpenTime,
+			hour.CloseTime,
+			hour.IsClosed,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -151,4 +174,17 @@ func (r *repository) CreateAccount(ctx context.Context, input CreateAccountInput
 		Active:          true,
 		CreatedAt:       now,
 	}, nil
+}
+
+func defaultBusinessHourSeeds() []businessHourSeed {
+	hours := make([]businessHourSeed, 0, 7)
+	for dayOfWeek := 0; dayOfWeek < 7; dayOfWeek++ {
+		hours = append(hours, businessHourSeed{
+			DayOfWeek: dayOfWeek,
+			OpenTime:  "08:00:00",
+			CloseTime: "18:00:00",
+			IsClosed:  true,
+		})
+	}
+	return hours
 }
