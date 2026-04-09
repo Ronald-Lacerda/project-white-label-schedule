@@ -22,9 +22,9 @@
         <li
           v-for="hour in hours"
           :key="hour.day_of_week"
-          class="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between"
+          class="flex flex-wrap items-center gap-4 px-6 py-5"
         >
-          <div class="space-y-1">
+          <div class="min-w-[8.5rem] space-y-1">
             <p class="text-sm font-semibold" style="color: var(--color-text);">
               {{ dayName(hour.day_of_week) }}
             </p>
@@ -33,19 +33,15 @@
             </p>
           </div>
 
-          <div class="flex flex-col gap-3 md:items-end">
-            <AppToggle
-              :checked="!hour.is_closed"
-              checked-label="Aberto"
-              unchecked-label="Fechado"
-              @update:checked="hour.is_closed = !$event"
-            />
-
+          <div class="ml-auto flex flex-wrap items-center gap-3">
             <div v-if="!hour.is_closed" class="flex flex-wrap items-center gap-3">
               <div class="flex items-center gap-2">
                 <select
                   :value="getTimePart(hour.open_time, 'hour')"
+                  :size="getSelectSize(`open-hour-${hour.day_of_week}`)"
                   class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @focus="expandSelect(`open-hour-${hour.day_of_week}`)"
+                  @blur="collapseSelect"
                   @change="onTimeSelect(hour, 'open_time', 'hour', $event)"
                 >
                   <option v-for="option in hourOptions" :key="`open-hour-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
@@ -53,7 +49,10 @@
                 <span class="text-sm font-semibold" style="color: var(--color-text-soft);">:</span>
                 <select
                   :value="getTimePart(hour.open_time, 'minute')"
+                  :size="getSelectSize(`open-minute-${hour.day_of_week}`)"
                   class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @focus="expandSelect(`open-minute-${hour.day_of_week}`)"
+                  @blur="collapseSelect"
                   @change="onTimeSelect(hour, 'open_time', 'minute', $event)"
                 >
                   <option v-for="option in minuteOptions" :key="`open-minute-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
@@ -63,7 +62,10 @@
               <div class="flex items-center gap-2">
                 <select
                   :value="getTimePart(hour.close_time, 'hour')"
+                  :size="getSelectSize(`close-hour-${hour.day_of_week}`)"
                   class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @focus="expandSelect(`close-hour-${hour.day_of_week}`)"
+                  @blur="collapseSelect"
                   @change="onTimeSelect(hour, 'close_time', 'hour', $event)"
                 >
                   <option v-for="option in hourOptions" :key="`close-hour-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
@@ -71,13 +73,23 @@
                 <span class="text-sm font-semibold" style="color: var(--color-text-soft);">:</span>
                 <select
                   :value="getTimePart(hour.close_time, 'minute')"
+                  :size="getSelectSize(`close-minute-${hour.day_of_week}`)"
                   class="ds-select w-auto min-w-[5.5rem] px-3 py-2"
+                  @focus="expandSelect(`close-minute-${hour.day_of_week}`)"
+                  @blur="collapseSelect"
                   @change="onTimeSelect(hour, 'close_time', 'minute', $event)"
                 >
                   <option v-for="option in minuteOptions" :key="`close-minute-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
                 </select>
               </div>
             </div>
+
+            <AppToggle
+              :checked="!hour.is_closed"
+              checked-label="Aberto"
+              unchecked-label="Fechado"
+              @update:checked="hour.is_closed = !$event"
+            />
           </div>
         </li>
       </ul>
@@ -110,6 +122,7 @@ const { hours, loading, error, fetchHours, saveHours, dayName } = useBusinessHou
 
 const saving = ref(false)
 const success = ref(false)
+const expandedSelect = ref<string | null>(null)
 const hourOptions = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
 const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
@@ -127,6 +140,18 @@ async function save() {
   } finally {
     saving.value = false
   }
+}
+
+function expandSelect(id: string) {
+  expandedSelect.value = id
+}
+
+function collapseSelect() {
+  expandedSelect.value = null
+}
+
+function getSelectSize(id: string) {
+  return expandedSelect.value === id ? 8 : 1
 }
 
 function normalizeTime(value: string) {
@@ -151,5 +176,6 @@ function onTimeSelect(hour: { open_time: string; close_time: string }, field: 'o
   const target = event.target as HTMLSelectElement | null
   if (!target) return
   updateTimePart(hour, field, part, target.value)
+  collapseSelect()
 }
 </script>

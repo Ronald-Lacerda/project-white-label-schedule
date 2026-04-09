@@ -1,0 +1,10 @@
+node_modules/
+.output/
+.nuxt/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+.git/
+.gitignore

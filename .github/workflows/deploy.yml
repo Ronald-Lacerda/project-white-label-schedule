@@ -1,0 +1,80 @@
+name: Deploy
+
+# Dispara apenas em tags do formato v* (ex: v1.0.0, v1.2.3)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: schedule
+          MYSQL_USER: schedule
+          MYSQL_PASSWORD: schedulepassword
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Run backend tests
+        env:
+          DATABASE_URL: mysql://schedule:schedulepassword@tcp(127.0.0.1:3306)/schedule
+          REDIS_URL: redis://127.0.0.1:6379
+          JWT_SECRET: test-secret
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+        run: go test ./...
+
+  deploy:
+    name: Deploy to EasyPanel
+    runs-on: ubuntu-latest
+    needs: tests
+
+    steps:
+      - name: Trigger EasyPanel deploy — Backend
+        run: |
+          curl -f -X POST "${{ secrets.EASYPANEL_DEPLOY_WEBHOOK_BACKEND }}" \
+            -H "Content-Type: application/json" || exit 1
+
+      - name: Trigger EasyPanel deploy — Frontend
+        run: |
+          curl -f -X POST "${{ secrets.EASYPANEL_DEPLOY_WEBHOOK_FRONTEND }}" \
+            -H "Content-Type: application/json" || exit 1
+
+      - name: Deploy summary
+        run: |
+          echo "✓ Deploy ${{ github.ref_name }} triggered successfully"
