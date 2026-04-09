@@ -88,7 +88,7 @@ func (fakeSchedulingRepo) UpdateAppointmentStatus(ctx context.Context, input Upd
 	return nil, nil
 }
 
-func (fakeSchedulingRepo) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, date string) ([]ManagerBlockedPeriod, error) {
+func (fakeSchedulingRepo) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, dateFrom, dateTo string) ([]ManagerBlockedPeriod, error) {
 	return nil, nil
 }
 
@@ -359,7 +359,7 @@ func (s *publicAppointmentRepoStub) UpdateAppointmentStatus(ctx context.Context,
 	return nil, shared.ErrNotFound
 }
 
-func (s *publicAppointmentRepoStub) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, date string) ([]ManagerBlockedPeriod, error) {
+func (s *publicAppointmentRepoStub) ListManagerBlockedPeriods(ctx context.Context, establishmentID, professionalID, dateFrom, dateTo string) ([]ManagerBlockedPeriod, error) {
 	return nil, nil
 }
 
