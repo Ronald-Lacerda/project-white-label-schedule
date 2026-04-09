@@ -18,7 +18,7 @@ const (
 	cacheTTL       = 30 * time.Second
 )
 
-// AvailabilityOptions agrupa os parametros necessarios para calcular disponibilidade.
+// AvailabilityOptions agrupa os parâmetros necessários para calcular disponibilidade.
 type AvailabilityOptions struct {
 	EstablishmentID string
 	ServiceID       string
@@ -45,7 +45,7 @@ type Service struct {
 	eventSyncer  AppointmentEventSyncer
 }
 
-// NewService cria um novo Service com injecao de dependencias.
+// NewService cria um novo Service com injeção de dependências.
 func NewService(repo Repository, rdb *redis.Client, busyProvider ExternalBusyProvider) *Service {
 	svc := &Service{repo: repo, redis: rdb, busyProvider: busyProvider}
 	if syncer, ok := any(busyProvider).(AppointmentEventSyncer); ok {
@@ -54,7 +54,7 @@ func NewService(repo Repository, rdb *redis.Client, busyProvider ExternalBusyPro
 	return svc
 }
 
-// GetAvailability retorna os slots disponiveis agrupados por profissional.
+// GetAvailability retorna os slots disponíveis agrupados por profissional.
 // Se opts.ProfessionalID for vazio, busca todos os profissionais ativos em paralelo.
 func (s *Service) GetAvailability(ctx context.Context, opts AvailabilityOptions) (map[string][]Slot, error) {
 	duration, err := s.repo.GetServiceDuration(ctx, opts.ServiceID, opts.EstablishmentID)
@@ -611,7 +611,7 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, input UpdateStatu
 	if !validManagerStatuses[input.Status] {
 		return nil, &shared.DomainError{
 			Code:    "INVALID_STATUS",
-			Message: "Status invalido. Use: completed, no_show ou cancelled.",
+			Message: "Status inválido. Use: completed, no_show ou cancelled.",
 			Status:  400,
 		}
 	}
@@ -622,7 +622,7 @@ func (s *Service) UpdateAppointmentStatus(ctx context.Context, input UpdateStatu
 	if appt.Status == "cancelled" || appt.Status == "completed" || appt.Status == "no_show" {
 		return nil, &shared.DomainError{
 			Code:    "STATUS_ALREADY_TERMINAL",
-			Message: "O agendamento ja esta em um estado final e nao pode ser alterado.",
+			Message: "O agendamento já está em um estado final e não pode ser alterado.",
 			Status:  409,
 		}
 	}

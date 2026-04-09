@@ -37,6 +37,8 @@
 </template>
 
 <script setup lang="ts">
+import { copy } from '~/constants/copy'
+
 const props = withDefaults(defineProps<{
   title: string
   subtitle: string
@@ -50,15 +52,15 @@ const props = withDefaults(defineProps<{
   primaryColor: null,
   secondaryColor: null,
   activeStep: 1,
-  eyebrow: 'Agendamento online',
+  eyebrow: copy.booking.eyebrow,
 })
 
 const steps = [
-  { step: 1, label: '1. Servico' },
-  { step: 2, label: '2. Profissional' },
-  { step: 3, label: '3. Horario' },
-  { step: 4, label: '4. Dados' },
-  { step: 5, label: '5. Confirmacao' },
+  { step: 1, label: copy.booking.service },
+  { step: 2, label: copy.booking.professional },
+  { step: 3, label: copy.booking.time },
+  { step: 4, label: copy.booking.customer },
+  { step: 5, label: copy.booking.confirmation },
 ]
 
 const theme = computed(() => buildBrandTheme({

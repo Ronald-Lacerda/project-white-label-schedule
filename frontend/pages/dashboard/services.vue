@@ -2,18 +2,18 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div class="space-y-2">
-        <h1 class="ds-title">Servicos</h1>
+        <h1 class="ds-title">Serviços</h1>
         <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
-          Monte o catalogo do estabelecimento e controle quais servicos continuam disponiveis para novos agendamentos.
+          Monte o catálogo do estabelecimento e controle quais serviços continuam disponíveis para novos agendamentos.
         </p>
       </div>
 
       <div class="flex justify-start lg:justify-end">
-        <AppButton variant="primary" @click="openModal()">+ Novo servico</AppButton>
+        <AppButton variant="primary" @click="openModal()">+ Novo serviço</AppButton>
       </div>
     </div>
 
-    <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">Carregando servicos...</div>
+    <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">Carregando serviços...</div>
 
     <div
       v-if="error"
@@ -26,8 +26,8 @@
 
     <AppSurface v-else-if="!loading && services.length === 0" tone="default" padding="lg">
       <div class="ds-empty-state">
-        <p>Nenhum servico cadastrado ainda.</p>
-        <AppButton variant="secondary" @click="openModal()">Cadastrar primeiro servico</AppButton>
+        <p>Nenhum serviço cadastrado ainda.</p>
+        <AppButton variant="secondary" @click="openModal()">Cadastrar primeiro serviço</AppButton>
       </div>
     </AppSurface>
 
@@ -61,8 +61,8 @@
 
     <AppModal
       :open="modal.open"
-      :title="modal.id ? 'Editar servico' : 'Novo servico'"
-      eyebrow="Catalogo"
+      :title="modal.id ? 'Editar serviço' : 'Novo serviço'"
+      eyebrow="Catálogo"
       width="sm"
       @close="closeModal"
     >
@@ -72,11 +72,11 @@
           <input v-model="modal.name" type="text" required class="ds-input" />
         </div>
         <div>
-          <label class="ds-label">Descricao (opcional)</label>
+          <label class="ds-label">Descrição (opcional)</label>
           <input v-model="modal.description" type="text" class="ds-input" />
         </div>
         <div>
-          <label class="ds-label">Duracao</label>
+          <label class="ds-label">Duração</label>
           <select v-model.number="modal.duration_minutes" class="ds-select">
             <option :value="15">15 min</option>
             <option :value="30">30 min</option>
@@ -92,11 +92,11 @@
             type="number"
             min="5"
             class="ds-input mt-2"
-            placeholder="Duracao em minutos"
+            placeholder="Duração em minutos"
           />
         </div>
         <div>
-          <label class="ds-label">Preco (R$)</label>
+          <label class="ds-label">Preço (R$)</label>
           <input
             :value="modal.price_reais"
             type="text"
@@ -118,12 +118,12 @@
 
     <AppConfirmModal
       :open="deleteModal.open"
-      title="Remover servico"
-      description="Essa acao remove o item do catalogo e pode afetar o fluxo publico de reservas."
-      eyebrow="Catalogo"
-      message="Deseja remover este servico?"
-      :details="deleteModal.name ? `Servico: ${deleteModal.name}` : ''"
-      confirm-label="Remover servico"
+      title="Remover serviço"
+      description="Essa ação remove o item do catálogo e pode afetar o fluxo público de reservas."
+      eyebrow="Catálogo"
+      message="Deseja remover este serviço?"
+      :details="deleteModal.name ? `Serviço: ${deleteModal.name}` : ''"
+      confirm-label="Remover serviço"
       loading-label="Removendo..."
       :loading="deleteModal.loading"
       @cancel="closeDeleteModal"

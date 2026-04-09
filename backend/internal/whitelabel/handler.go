@@ -31,18 +31,18 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	shared.JSON(w, http.StatusOK, cfg)
 }
 
-// UploadLogo trata POST /api/v1/whitelabel/logo (multipart, campo "logo")
+// UploadLogo trata POST /api/v1/whitelabel/logo (multipart, campo "logo").
 func (h *Handler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	establishmentID := shared.EstablishmentIDFromContext(r.Context())
 
 	if err := r.ParseMultipartForm(5 << 20); err != nil { // 5 MB
-		shared.JSONError(w, &shared.DomainError{Code: "INVALID_FORM", Message: "Erro ao processar o formulario.", Status: http.StatusBadRequest})
+		shared.JSONError(w, &shared.DomainError{Code: "INVALID_FORM", Message: "Erro ao processar o formulário.", Status: http.StatusBadRequest})
 		return
 	}
 
 	file, header, err := r.FormFile("logo")
 	if err != nil {
-		shared.JSONError(w, &shared.DomainError{Code: "MISSING_FILE", Message: "Arquivo 'logo' nao encontrado.", Status: http.StatusBadRequest})
+		shared.JSONError(w, &shared.DomainError{Code: "MISSING_FILE", Message: "Arquivo 'logo' não encontrado.", Status: http.StatusBadRequest})
 		return
 	}
 	defer file.Close()
@@ -50,7 +50,7 @@ func (h *Handler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".svg": true}
 	if !allowed[ext] {
-		shared.JSONError(w, &shared.DomainError{Code: "INVALID_FILE_TYPE", Message: "Tipo de arquivo nao permitido. Use jpg, png, webp ou svg.", Status: http.StatusBadRequest})
+		shared.JSONError(w, &shared.DomainError{Code: "INVALID_FILE_TYPE", Message: "Tipo de arquivo não permitido. Use jpg, png, webp ou svg.", Status: http.StatusBadRequest})
 		return
 	}
 

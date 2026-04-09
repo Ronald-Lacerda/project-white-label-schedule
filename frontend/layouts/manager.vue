@@ -39,12 +39,12 @@
               </div>
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold" style="color: var(--color-text);">{{ auth.user.value?.name || 'Gestor' }}</p>
-                <p class="text-xs" style="color: var(--color-text-soft);">Conta administrativa</p>
+                <p class="text-xs" style="color: var(--color-text-soft);">{{ copy.common.managerAccount }}</p>
               </div>
             </div>
 
             <AppButton variant="ghost" size="sm" block @click="auth.logout">
-              Sair do painel
+              {{ copy.common.logout }}
             </AppButton>
           </div>
         </div>
@@ -72,6 +72,8 @@
 </template>
 
 <script setup lang="ts">
+import { copy } from '~/constants/copy'
+
 const auth = useAuth()
 const route = useRoute()
 
@@ -80,12 +82,12 @@ if (import.meta.client) {
 }
 
 const navItems = [
-  { to: '/dashboard', label: 'Inicio', heading: 'Visao operacional', hint: 'Resumo do dia' },
-  { to: '/dashboard/appointments', label: 'Agendamentos', heading: 'Agenda e status', hint: 'Fluxo e bloqueios' },
-  { to: '/dashboard/professionals', label: 'Profissionais', heading: 'Equipe', hint: 'Escala e cadastro' },
-  { to: '/dashboard/services', label: 'Servicos', heading: 'Catalogo', hint: 'Ofertas e duracao' },
-  { to: '/dashboard/hours', label: 'Horarios', heading: 'Disponibilidade base', hint: 'Jornada da casa' },
-  { to: '/dashboard/settings', label: 'Configuracoes', heading: 'Marca e integracoes', hint: 'Whitelabel e Google' },
+  { to: '/dashboard', label: copy.nav.dashboard, heading: 'Visão operacional', hint: copy.nav.dashboardHint },
+  { to: '/dashboard/appointments', label: copy.nav.appointments, heading: 'Agenda e status', hint: copy.nav.appointmentsHint },
+  { to: '/dashboard/professionals', label: copy.nav.professionals, heading: 'Equipe', hint: copy.nav.professionalsHint },
+  { to: '/dashboard/services', label: copy.nav.services, heading: 'Catálogo', hint: copy.nav.servicesHint },
+  { to: '/dashboard/hours', label: copy.nav.hours, heading: 'Disponibilidade base', hint: copy.nav.hoursHint },
+  { to: '/dashboard/settings', label: copy.nav.settings, heading: 'Marca e integrações', hint: copy.nav.settingsHint },
 ]
 
 const userInitials = computed(() => (auth.user.value?.name || 'G').trim().slice(0, 2).toUpperCase())

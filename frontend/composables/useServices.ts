@@ -27,7 +27,7 @@ export function useServices() {
       services.value = normalizeServices(await api.get<Service[] | null>('/api/v1/services'))
     } catch {
       services.value = []
-      error.value = 'Erro ao carregar servicos.'
+      error.value = 'Erro ao carregar serviços.'
     } finally {
       loading.value = false
     }

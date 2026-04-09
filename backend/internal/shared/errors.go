@@ -2,7 +2,7 @@ package shared
 
 import "net/http"
 
-// DomainError representa um erro de negocio com codigo e status HTTP.
+// DomainError representa um erro de negócio com código e status HTTP.
 type DomainError struct {
 	Code    string
 	Message string
@@ -14,16 +14,16 @@ func (e *DomainError) Error() string {
 }
 
 var (
-	ErrSlotUnavailable         = &DomainError{Code: "SLOT_UNAVAILABLE", Message: "O horario selecionado nao esta mais disponivel.", Status: http.StatusConflict}
-	ErrOutsideBusinessHours    = &DomainError{Code: "OUTSIDE_BUSINESS_HOURS", Message: "Horario fora do expediente do estabelecimento.", Status: http.StatusUnprocessableEntity}
-	ErrProfessionalInactive    = &DomainError{Code: "PROFESSIONAL_INACTIVE", Message: "Profissional indisponivel.", Status: http.StatusUnprocessableEntity}
-	ErrServiceDurationConflict = &DomainError{Code: "SERVICE_DURATION_CONFLICT", Message: "O servico nao cabe no horario selecionado.", Status: http.StatusUnprocessableEntity}
-	ErrNotFound                = &DomainError{Code: "NOT_FOUND", Message: "Recurso nao encontrado.", Status: http.StatusNotFound}
-	ErrUnauthorized            = &DomainError{Code: "UNAUTHORIZED", Message: "Nao autenticado.", Status: http.StatusUnauthorized}
-	ErrForbidden               = &DomainError{Code: "FORBIDDEN", Message: "Sem permissao para esta operacao.", Status: http.StatusForbidden}
-	ErrEmailConflict           = &DomainError{Code: "EMAIL_CONFLICT", Message: "Este e-mail ja esta cadastrado.", Status: http.StatusConflict}
-	ErrSlugConflict            = &DomainError{Code: "SLUG_CONFLICT", Message: "Este identificador ja esta em uso.", Status: http.StatusConflict}
-	ErrInvalidInput            = &DomainError{Code: "INVALID_INPUT", Message: "Dados invalidos na requisicao.", Status: http.StatusBadRequest}
-	ErrCancelTooLate           = &DomainError{Code: "CANCEL_TOO_LATE", Message: "Cancelamento fora do prazo minimo.", Status: http.StatusUnprocessableEntity}
-	ErrIntegrationNotConfigured = &DomainError{Code: "INTEGRATION_NOT_CONFIGURED", Message: "A integracao ainda nao foi configurada no servidor.", Status: http.StatusPreconditionFailed}
+	ErrSlotUnavailable         = &DomainError{Code: "SLOT_UNAVAILABLE", Message: "O horário selecionado não está mais disponível.", Status: http.StatusConflict}
+	ErrOutsideBusinessHours    = &DomainError{Code: "OUTSIDE_BUSINESS_HOURS", Message: "Horário fora do expediente do estabelecimento.", Status: http.StatusUnprocessableEntity}
+	ErrProfessionalInactive    = &DomainError{Code: "PROFESSIONAL_INACTIVE", Message: "Profissional indisponível.", Status: http.StatusUnprocessableEntity}
+	ErrServiceDurationConflict = &DomainError{Code: "SERVICE_DURATION_CONFLICT", Message: "O serviço não cabe no horário selecionado.", Status: http.StatusUnprocessableEntity}
+	ErrNotFound                = &DomainError{Code: "NOT_FOUND", Message: "Recurso não encontrado.", Status: http.StatusNotFound}
+	ErrUnauthorized            = &DomainError{Code: "UNAUTHORIZED", Message: "Não autenticado.", Status: http.StatusUnauthorized}
+	ErrForbidden               = &DomainError{Code: "FORBIDDEN", Message: "Sem permissão para esta operação.", Status: http.StatusForbidden}
+	ErrEmailConflict           = &DomainError{Code: "EMAIL_CONFLICT", Message: "Este e-mail já está cadastrado.", Status: http.StatusConflict}
+	ErrSlugConflict            = &DomainError{Code: "SLUG_CONFLICT", Message: "Este identificador já está em uso.", Status: http.StatusConflict}
+	ErrInvalidInput            = &DomainError{Code: "INVALID_INPUT", Message: "Dados inválidos na requisição.", Status: http.StatusBadRequest}
+	ErrCancelTooLate           = &DomainError{Code: "CANCEL_TOO_LATE", Message: "Cancelamento fora do prazo mínimo.", Status: http.StatusUnprocessableEntity}
+	ErrIntegrationNotConfigured = &DomainError{Code: "INTEGRATION_NOT_CONFIGURED", Message: "A integração ainda não foi configurada no servidor.", Status: http.StatusPreconditionFailed}
 )

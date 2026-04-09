@@ -8,15 +8,15 @@
       <AppSurface tone="default" padding="lg">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <p class="ds-kicker">Integracao</p>
+            <p class="ds-kicker">Integração</p>
             <h2 class="mt-2 text-xl font-semibold" style="color: var(--color-text);">Google Agenda</h2>
             <p class="mt-2 text-sm leading-6" style="color: var(--color-text-muted);">
-              Conecte sua conta para sincronizar agendas por profissional e preparar os proximos passos do MVP.
+              Conecte sua conta para sincronizar agendas por profissional e preparar os próximos passos do MVP.
             </p>
           </div>
 
           <AppStatusPill :tone="establishment?.google_calendar_connected ? 'success' : 'neutral'">
-            {{ establishment?.google_calendar_connected ? 'Conectado' : 'Nao conectado' }}
+            {{ establishment?.google_calendar_connected ? 'Conectado' : 'Não conectado' }}
           </AppStatusPill>
         </div>
 
@@ -26,7 +26,7 @@
             to="/dashboard/settings/google"
             variant="primary"
           >
-            Gerenciar conexao
+            Gerenciar conexão
           </AppButton>
           <button
             v-else
@@ -54,7 +54,7 @@
               </div>
 
               <div class="xl:col-span-3">
-                <label class="ds-label">Fuso horario</label>
+                <label class="ds-label">Fuso horário</label>
                 <select v-model="estForm.timezone" class="ds-select">
                   <option value="America/Sao_Paulo">America/Sao Paulo</option>
                   <option value="America/Manaus">America/Manaus</option>
@@ -72,12 +72,12 @@
                   <input v-model="estForm.slug" type="text" required class="ds-input flex-1" />
                 </div>
                 <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">
-                  Link publico: /page/{{ estForm.slug }}
+                  Link público: /page/{{ estForm.slug }}
                 </p>
               </div>
 
               <div class="xl:col-span-4">
-                <label class="ds-label">Antecedencia minima para cancelamento (horas)</label>
+                <label class="ds-label">Antecedência mínima para cancelamento (horas)</label>
                 <input v-model.number="estForm.min_advance_cancel_hours" type="number" min="0" class="ds-input" />
               </div>
             </div>
@@ -112,7 +112,7 @@
       </div>
 
       <AppSurface tone="default" padding="lg">
-        <h2 class="mb-4 text-xl font-semibold" style="color: var(--color-text);">Aparencia (Whitelabel)</h2>
+        <h2 class="mb-4 text-xl font-semibold" style="color: var(--color-text);">Aparência (Whitelabel)</h2>
 
         <div class="space-y-6">
           <div>
@@ -152,7 +152,7 @@
           <form class="space-y-4" @submit.prevent="saveWhitelabel">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label class="ds-label">Cor primaria</label>
+                <label class="ds-label">Cor primária</label>
                 <div class="flex items-center gap-2">
                   <input v-model="wlForm.primary_color" type="color" class="h-10 w-10 cursor-pointer rounded border" style="border-color: var(--color-border);" />
                   <input v-model="wlForm.primary_color" type="text" class="ds-input flex-1" placeholder="#000000" />
@@ -160,7 +160,7 @@
               </div>
 
               <div>
-                <label class="ds-label">Cor secundaria</label>
+                <label class="ds-label">Cor secundária</label>
                 <div class="flex items-center gap-2">
                   <input v-model="wlForm.secondary_color" type="color" class="h-10 w-10 cursor-pointer rounded border" style="border-color: var(--color-border);" />
                   <input v-model="wlForm.secondary_color" type="text" class="ds-input flex-1" placeholder="#ffffff" />
@@ -174,7 +174,7 @@
             <p v-if="wlSuccess" class="text-sm" style="color: var(--color-success);">Salvo com sucesso!</p>
 
             <AppButton type="submit" variant="primary" :disabled="wlSaving">
-              {{ wlSaving ? 'Salvando...' : 'Salvar aparencia' }}
+              {{ wlSaving ? 'Salvando...' : 'Salvar aparência' }}
             </AppButton>
           </form>
         </div>
@@ -211,7 +211,7 @@ async function handleConnect() {
     const url = await getAuthUrl()
     window.location.href = url
   } catch (e: any) {
-    connectError.value = e?.data?.error?.message ?? 'Erro ao iniciar conexao.'
+    connectError.value = e?.data?.error?.message ?? 'Erro ao iniciar conexão.'
     connecting.value = false
   }
 }
@@ -256,7 +256,7 @@ async function handleLogoUpload(event: Event) {
     logoSuccess.value = true
     setTimeout(() => { logoSuccess.value = false }, 3000)
   } catch (e: any) {
-    logoError.value = e?.data?.error?.message ?? 'Erro ao enviar logo.'
+    logoError.value = e?.data?.error?.message ?? 'Erro ao enviar a logo.'
   } finally {
     logoUploading.value = false
     input.value = ''

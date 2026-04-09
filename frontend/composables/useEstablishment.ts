@@ -32,7 +32,7 @@ export function useEstablishment() {
     try {
       establishment.value = await api.get<Establishment>('/api/v1/establishment')
     } catch {
-      error.value = 'Erro ao carregar dados do estabelecimento.'
+      error.value = 'Erro ao carregar os dados do estabelecimento.'
     } finally {
       loading.value = false
     }

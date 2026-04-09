@@ -10,9 +10,9 @@
       <div class="grid w-full gap-6 lg:grid-cols-[1fr_560px] lg:items-start">
         <div class="hidden lg:block">
           <p class="ds-kicker">Onboarding</p>
-          <h1 class="ds-display-title mt-4 max-w-xl">Crie sua operacao com identidade propria desde o primeiro acesso.</h1>
+          <h1 class="ds-display-title mt-4 max-w-xl">Crie sua operação com identidade própria desde o primeiro acesso.</h1>
           <p class="ds-subtitle mt-4 max-w-lg">
-            Cadastre o negocio, defina o link publico e entre direto no painel para concluir marca, equipe e horarios.
+            Cadastre o negócio, defina o link público e entre direto no painel para concluir marca, equipe e horários.
           </p>
         </div>
 
@@ -25,7 +25,7 @@
 
           <form @submit.prevent="handleRegister" class="mt-6 space-y-4">
             <div>
-              <label for="owner_name" class="ds-label">Nome do responsavel</label>
+              <label for="owner_name" class="ds-label">Nome do responsável</label>
               <input
                 id="owner_name"
                 v-model="form.owner_name"
@@ -46,7 +46,7 @@
                 required
                 autocomplete="organization"
                 class="ds-input"
-                placeholder="Nome do seu negocio"
+                placeholder="Nome do seu negócio"
               />
             </div>
 
@@ -63,7 +63,7 @@
                   placeholder="meu-estabelecimento"
                 />
               </div>
-              <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Link publico: /page/{{ slugPreview }}</p>
+              <p class="mt-2 text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Link público: /page/{{ slugPreview }}</p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -76,7 +76,7 @@
                   required
                   autocomplete="email"
                   class="ds-input"
-                  placeholder="voce@empresa.com"
+                  placeholder="você@empresa.com"
                 />
               </div>
 
@@ -105,7 +105,7 @@
                 minlength="8"
                 autocomplete="new-password"
                 class="ds-input"
-                placeholder="No minimo 8 caracteres"
+                placeholder="No mínimo 8 caracteres"
               />
             </div>
 
@@ -119,7 +119,7 @@
           </form>
 
           <p class="mt-6 text-sm text-center" style="color: var(--color-text-muted);">
-            Ja tem conta?
+            Já tem conta?
             <NuxtLink to="/login" class="font-semibold" style="color: var(--color-brand-primary);">
               Entrar
             </NuxtLink>
@@ -196,15 +196,15 @@ async function handleRegister() {
   } catch (e: any) {
     const code = e?.data?.error?.code
     if (!e?.data?.error) {
-      error.value = 'Nao foi possivel conectar ao servidor. Verifique se a API esta rodando em http://localhost:8080.'
+      error.value = 'Não foi possível conectar ao servidor. Verifique se a API está rodando em http://localhost:8080.'
     } else if (code === 'EMAIL_CONFLICT') {
-      error.value = 'Este e-mail ja esta cadastrado.'
+      error.value = 'Este e-mail já está cadastrado.'
     } else if (code === 'SLUG_CONFLICT') {
-      error.value = 'Este identificador de URL ja esta em uso.'
+      error.value = 'Este identificador de URL já está em uso.'
     } else if (code === 'INVALID_INPUT') {
-      error.value = 'Revise os dados informados. A senha deve ter no minimo 8 caracteres.'
+      error.value = 'Revise os dados informados. A senha deve ter no mínimo 8 caracteres.'
     } else {
-      error.value = e?.data?.error?.message ?? 'Nao foi possivel criar a conta.'
+      error.value = e?.data?.error?.message ?? 'Não foi possível criar a conta.'
     }
   } finally {
     loading.value = false

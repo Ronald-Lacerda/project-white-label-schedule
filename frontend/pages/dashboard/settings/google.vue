@@ -2,7 +2,7 @@
   <div class="max-w-2xl space-y-6">
     <div class="flex items-center gap-2">
       <AppButton to="/dashboard/settings" variant="ghost" size="sm">
-        Voltar para configuracoes
+        Voltar para configurações
       </AppButton>
     </div>
 
@@ -18,7 +18,7 @@
       class="rounded-[1.2rem] border px-5 py-4 text-sm font-medium"
       style="background: var(--color-danger-soft); border-color: var(--color-danger); color: var(--color-danger);"
     >
-      Nao foi possivel conectar o Google Agenda. Tente novamente.
+      Não foi possível conectar o Google Agenda. Tente novamente.
     </div>
 
     <div v-if="loading" class="text-sm" style="color: var(--color-text-muted);">Carregando...</div>
@@ -89,7 +89,7 @@
             <div>
               <p class="text-sm font-semibold" style="color: var(--color-text);">{{ prof.name }}</p>
               <p class="mt-0.5 text-xs" :style="prof.google_calendar_id ? 'color: var(--color-text-soft)' : 'color: var(--color-warning)'">
-                {{ prof.google_calendar_id ? 'Agenda sincronizada' : 'Agenda ainda nao criada' }}
+                {{ prof.google_calendar_id ? 'Agenda sincronizada' : 'Agenda ainda não criada' }}
               </p>
             </div>
             <AppStatusPill :tone="prof.google_calendar_id ? 'success' : 'warning'">
@@ -125,10 +125,10 @@
     <AppConfirmModal
       :open="disconnectModal"
       title="Desconectar Google Agenda"
-      description="A conta sera desconectada do painel, sem alterar os agendamentos ja existentes."
-      eyebrow="Integracao"
+      description="A conta será desconectada do painel, sem alterar os agendamentos já existentes."
+      eyebrow="Integração"
       message="Deseja desconectar a conta do Google Agenda?"
-      details="A sincronizacao deixa de ocorrer ate uma nova conexao ser realizada."
+      details="A sincronização deixa de ocorrer até uma nova conexão ser realizada."
       confirm-label="Desconectar conta"
       loading-label="Desconectando..."
       :loading="disconnecting"
@@ -164,7 +164,7 @@ async function handleConnect() {
     const url = await getAuthUrl()
     window.location.href = url
   } catch (e: any) {
-    actionError.value = e?.data?.error?.message ?? 'Erro ao iniciar conexao.'
+    actionError.value = e?.data?.error?.message ?? 'Erro ao iniciar conexão.'
     connecting.value = false
   }
 }

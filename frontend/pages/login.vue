@@ -10,9 +10,9 @@
       <div class="grid w-full gap-6 lg:grid-cols-[1.1fr_460px] lg:items-center">
         <div class="hidden lg:block">
           <p class="ds-kicker">White Label Schedule</p>
-          <h1 class="ds-display-title mt-4 max-w-xl">Operacao clara para agenda, equipe e marca.</h1>
+          <h1 class="ds-display-title mt-4 max-w-xl">Operação clara para agenda, equipe e marca.</h1>
           <p class="ds-subtitle mt-4 max-w-lg">
-            Entre no painel para organizar profissionais, servicos, horarios e acompanhar os agendamentos sem perder contexto.
+            Entre no painel para organizar profissionais, serviços, horários e acompanhar os agendamentos sem perder contexto.
           </p>
         </div>
 
@@ -59,7 +59,7 @@
           </form>
 
           <p class="mt-6 text-sm text-center" style="color: var(--color-text-muted);">
-            Ainda nao tem conta?
+            Ainda não tem conta?
             <NuxtLink to="/criar-conta" class="font-semibold" style="color: var(--color-brand-primary);">
               Criar conta
             </NuxtLink>

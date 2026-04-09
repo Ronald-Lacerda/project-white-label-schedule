@@ -15,7 +15,7 @@ export function useBusinessHours() {
   const loading = ref(false)
   const error = ref('')
 
-  // Inicializa os 7 dias com valores padrão se não existirem
+  // Inicializa os 7 dias com valores padrão se não existirem.
   function initDefaults(data: BusinessHour[] | null | undefined): BusinessHour[] {
     return Array.from({ length: 7 }, (_, i) => {
       const existing = (data ?? []).find(h => h.day_of_week === i)
@@ -24,7 +24,7 @@ export function useBusinessHours() {
         day_of_week: i,
         open_time: '08:00:00',
         close_time: '18:00:00',
-        is_closed: i === 0, // domingo fechado por padrão
+        is_closed: i === 0, // Domingo fechado por padrão.
       }
     })
   }
@@ -36,7 +36,7 @@ export function useBusinessHours() {
       const data = await api.get<BusinessHour[]>('/api/v1/establishment/business-hours')
       hours.value = initDefaults(data)
     } catch {
-      error.value = 'Erro ao carregar horarios.'
+      error.value = 'Erro ao carregar horários.'
     } finally {
       loading.value = false
     }
@@ -52,7 +52,7 @@ export function useBusinessHours() {
       hours.value = initDefaults(updated)
       return updated
     } catch {
-      error.value = 'Erro ao salvar horarios.'
+      error.value = 'Erro ao salvar horários.'
       throw new Error(error.value)
     }
   }

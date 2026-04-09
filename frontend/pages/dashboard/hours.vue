@@ -1,9 +1,9 @@
 <template>
   <div class="ds-page max-w-4xl">
     <div class="space-y-2">
-      <h1 class="ds-title">Horarios</h1>
+      <h1 class="ds-title">Horários</h1>
       <p class="text-sm leading-6" style="color: var(--color-text-muted);">
-        Defina a disponibilidade base do estabelecimento para alimentar o motor de horarios e a agenda publica.
+        Defina a disponibilidade base do estabelecimento para alimentar o motor de horários e a agenda pública.
       </p>
     </div>
 
@@ -29,7 +29,7 @@
               {{ dayName(hour.day_of_week) }}
             </p>
             <p class="text-xs uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">
-              {{ hour.is_closed ? 'Fechado' : `${formatShortTimeBr(hour.open_time)} as ${formatShortTimeBr(hour.close_time)}` }}
+              {{ hour.is_closed ? 'Fechado' : `${formatShortTimeBr(hour.open_time)} às ${formatShortTimeBr(hour.close_time)}` }}
             </p>
           </div>
 
@@ -59,7 +59,7 @@
                   <option v-for="option in minuteOptions" :key="`open-minute-${hour.day_of_week}-${option}`" :value="option">{{ option }}</option>
                 </select>
               </div>
-              <span class="text-sm" style="color: var(--color-text-soft);">ate</span>
+              <span class="text-sm" style="color: var(--color-text-soft);">até</span>
               <div class="flex items-center gap-2">
                 <select
                   :value="getTimePart(hour.close_time, 'hour')"
@@ -86,16 +86,16 @@
     <AppSurface tone="muted" padding="lg">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p class="text-sm font-semibold" style="color: var(--color-text);">Revisao final</p>
+          <p class="text-sm font-semibold" style="color: var(--color-text);">Revisão final</p>
           <p class="mt-1 text-sm" style="color: var(--color-text-muted);">
-            Esses horarios alimentam o motor de disponibilidade e o fluxo publico de reservas.
+            Esses horários alimentam o motor de disponibilidade e o fluxo público de reservas.
           </p>
         </div>
 
         <div class="flex items-center gap-4">
           <p v-if="success" class="text-sm" style="color: var(--color-success);">Salvo com sucesso.</p>
           <AppButton variant="primary" :disabled="saving || loading" @click="save">
-            {{ saving ? 'Salvando...' : 'Salvar horarios' }}
+            {{ saving ? 'Salvando...' : 'Salvar horários' }}
           </AppButton>
         </div>
       </div>

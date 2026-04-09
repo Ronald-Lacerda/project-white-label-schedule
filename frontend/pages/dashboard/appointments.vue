@@ -4,7 +4,7 @@
       <div class="space-y-2">
         <h1 class="ds-title">Agendamentos</h1>
         <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
-          Consulte a agenda por periodo, acompanhe os status e bloqueie intervalos da equipe quando necessario.
+          Consulte a agenda por período, acompanhe os status e bloqueie intervalos da equipe quando necessário.
         </p>
       </div>
 
@@ -13,7 +13,7 @@
           Limpar filtros
         </AppButton>
         <AppButton variant="primary" @click="openBlockModal">
-          Bloquear periodo
+          Bloquear período
         </AppButton>
       </div>
     </div>
@@ -38,7 +38,7 @@
           </div>
 
           <div>
-            <label class="ds-label">Ate</label>
+            <label class="ds-label">Até</label>
             <input v-model="filters.date_to" type="date" lang="pt-BR" class="ds-input" />
           </div>
 
@@ -73,7 +73,7 @@
             <div>
               <p class="text-sm font-semibold" style="color: var(--color-text);">Bloqueios ativos no filtro atual</p>
               <p class="mt-1 text-sm" style="color: var(--color-text-muted);">
-                Use esta area para checar indisponibilidades antes de editar ou encaixar horarios.
+                Use esta área para checar indisponibilidades antes de editar ou encaixar horários.
               </p>
             </div>
             <AppStatusPill tone="warning">{{ blockedPeriods.length }} bloqueio(s)</AppStatusPill>
@@ -89,7 +89,7 @@
               <div>
                 <p class="text-sm font-semibold" style="color: var(--color-text);">{{ blocked.professional_name }}</p>
                 <p class="mt-1 text-sm" style="color: var(--color-text-muted);">
-                  {{ formatDate(blocked.starts_at) }} · {{ formatTime(blocked.starts_at) }} ate {{ formatTime(blocked.ends_at) }}
+                  {{ formatDate(blocked.starts_at) }} · {{ formatTime(blocked.starts_at) }} até {{ formatTime(blocked.ends_at) }}
                 </p>
                 <p v-if="blocked.reason" class="mt-2 text-xs font-medium uppercase tracking-[0.18em]" style="color: var(--color-text-soft);">
                   {{ blocked.reason }}
@@ -126,12 +126,12 @@
           <table class="min-w-full">
             <thead>
               <tr class="border-b" style="border-color: var(--color-border); background: var(--color-surface-muted);">
-                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Horario</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Horário</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Cliente</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Servico</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Serviço</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Profissional</th>
                 <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Status</th>
-                <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Acoes</th>
+                <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.22em]" style="color: var(--color-text-soft);">Ações</th>
               </tr>
             </thead>
             <tbody class="ds-grid-table">
@@ -196,7 +196,7 @@
               </div>
               <div class="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Servico</p>
+                  <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Serviço</p>
                   <p class="mt-1 text-sm font-medium" style="color: var(--color-text);">{{ appointment.service_name }}</p>
                 </div>
                 <div>
@@ -222,7 +222,7 @@
               Anterior
             </AppButton>
             <AppButton size="sm" variant="secondary" :disabled="meta.page * meta.per_page >= meta.total" @click="goPage(meta.page + 1)">
-              Proxima
+              Próxima
             </AppButton>
           </div>
         </div>
@@ -232,7 +232,7 @@
     <AppModal
       :open="Boolean(detailAppt)"
       title="Detalhe do agendamento"
-      description="Consulte dados do cliente, status atual e realize acoes rapidas sem sair da agenda."
+      description="Consulte dados do cliente, status atual e realize ações rápidas sem sair da agenda."
       eyebrow="Consulta"
       width="md"
       @close="detailAppt = null"
@@ -253,7 +253,7 @@
             </div>
           </div>
           <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Servico</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Serviço</p>
             <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">
               {{ detailAppt.service_name }} ({{ detailAppt.duration_minutes }} min)
             </p>
@@ -267,7 +267,7 @@
         <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface);">
           <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Data e hora</p>
           <p class="mt-2 text-sm font-semibold" style="color: var(--color-text);">
-            {{ formatDate(detailAppt.starts_at) }} · {{ formatTime(detailAppt.starts_at) }} ate {{ formatTime(detailAppt.ends_at) }}
+            {{ formatDate(detailAppt.starts_at) }} · {{ formatTime(detailAppt.starts_at) }} até {{ formatTime(detailAppt.ends_at) }}
           </p>
           <p v-if="detailAppt.notes" class="mt-4 text-sm" style="color: var(--color-text-muted);">
             {{ detailAppt.notes }}
@@ -284,8 +284,8 @@
 
     <AppModal
       :open="showBlockModal"
-      title="Bloquear periodo"
-      description="Reserve um intervalo para pausa, reuniao, ferias ou qualquer indisponibilidade da equipe."
+      title="Bloquear período"
+      description="Reserve um intervalo para pausa, reunião, férias ou qualquer indisponibilidade da equipe."
       eyebrow="Disponibilidade"
       width="sm"
       @close="showBlockModal = false"
@@ -300,7 +300,7 @@
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
-            <label class="ds-label">Inicio</label>
+            <label class="ds-label">Início</label>
             <input v-model="blockForm.starts_at" type="datetime-local" lang="pt-BR" class="ds-input" />
           </div>
           <div>
@@ -310,7 +310,7 @@
         </div>
         <div>
           <label class="ds-label">Motivo</label>
-          <input v-model="blockForm.reason" type="text" class="ds-input" placeholder="Ex: reuniao interna, ferias, manutencao..." />
+          <input v-model="blockForm.reason" type="text" class="ds-input" placeholder="Ex.: reunião interna, férias, manutenção..." />
         </div>
         <p v-if="blockError" class="text-sm font-medium" style="color: var(--color-danger);">{{ blockError }}</p>
       </div>
@@ -328,7 +328,7 @@
     <AppConfirmModal
       :open="removeBlockModal.open"
       title="Remover bloqueio"
-      description="Essa acao libera novamente o periodo para o motor de disponibilidade."
+      description="Essa ação libera novamente o período para o motor de disponibilidade."
       eyebrow="Disponibilidade"
       message="Deseja remover este bloqueio?"
       :details="removeBlockModal.professional ? `Profissional: ${removeBlockModal.professional}` : ''"
@@ -402,7 +402,7 @@ function formatBirthDate(value: string) {
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     confirmed: 'Confirmado',
-    completed: 'Concluido',
+    completed: 'Concluído',
     no_show: 'No-show',
     cancelled: 'Cancelado',
   }
@@ -461,7 +461,7 @@ function openBlockModal() {
 
 async function submitBlock() {
   if (!blockForm.professional_id || !blockForm.starts_at || !blockForm.ends_at) {
-    blockError.value = 'Preencha profissional, inicio e fim.'
+    blockError.value = 'Preencha profissional, início e fim.'
     return
   }
 

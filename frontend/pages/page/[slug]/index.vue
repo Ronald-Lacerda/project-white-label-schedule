@@ -4,7 +4,7 @@
       <AppSurface tone="default">
         <div class="ds-empty-state">
           <AppStatusPill tone="info">Carregando</AppStatusPill>
-          <p class="text-sm">Montando a experiencia de agendamento.</p>
+          <p class="text-sm">{{ copy.booking.loadingMessage }}</p>
         </div>
       </AppSurface>
     </div>
@@ -12,8 +12,8 @@
     <div v-else-if="error || !establishment" class="py-8">
       <AppSurface tone="default">
         <div class="ds-empty-state">
-          <AppStatusPill tone="danger">Nao encontrado</AppStatusPill>
-          <p class="text-sm">Estabelecimento nao encontrado.</p>
+          <AppStatusPill tone="danger">{{ copy.booking.notFoundTitle }}</AppStatusPill>
+          <p class="text-sm">{{ copy.booking.notFoundMessage }}</p>
         </div>
       </AppSurface>
     </div>
@@ -82,15 +82,15 @@
         <p class="ds-kicker">Agendamento confirmado</p>
         <h2 class="mt-2 font-display text-4xl font-semibold tracking-tight" style="color: var(--color-brand-text);">Tudo certo por aqui</h2>
         <p class="mt-3 text-sm" style="color: var(--color-text-muted);">
-          Seu horario foi reservado e o codigo abaixo pode ser usado em contatos futuros com o estabelecimento.
+          Seu horário foi reservado e o código abaixo pode ser usado em contatos futuros com o estabelecimento.
         </p>
 
         <div class="mt-5 grid gap-3 text-sm md:grid-cols-2">
-          <p><span class="font-semibold">Codigo:</span> {{ bookingResult.id }}</p>
-          <p><span class="font-semibold">Servico:</span> {{ selectedService?.name }}</p>
+          <p><span class="font-semibold">Código:</span> {{ bookingResult.id }}</p>
+          <p><span class="font-semibold">Serviço:</span> {{ selectedService?.name }}</p>
           <p><span class="font-semibold">Profissional:</span> {{ professionalName(bookingResult.professional_id) }}</p>
           <p><span class="font-semibold">Data:</span> {{ formatDateLong(bookingResult.starts_at) }}</p>
-          <p><span class="font-semibold">Horario:</span> {{ formatTime(bookingResult.starts_at) }}</p>
+          <p><span class="font-semibold">Horário:</span> {{ formatTime(bookingResult.starts_at) }}</p>
           <p><span class="font-semibold">Cliente:</span> {{ bookingForm.client_name }}</p>
         </div>
       </AppSurface>
@@ -104,11 +104,11 @@
 
         <div v-if="currentStep === 1" class="mt-6 space-y-4">
           <div v-if="servicesLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-            Carregando servicos.
+            Carregando serviços.
           </div>
 
           <div v-else-if="services.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-            Nenhum servico disponivel no momento.
+            Nenhum serviço disponível no momento.
           </div>
 
           <AppSelectableCard
@@ -138,14 +138,14 @@
           </div>
 
           <div v-else-if="professionals.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-            Nenhum profissional foi vinculado a este servico.
+            Nenhum profissional foi vinculado a este serviço.
           </div>
 
           <AppSelectableCard
             v-for="professional in professionals"
             :key="professional.id"
             :title="professional.name"
-            :description="selectedProfessionalId === professional.id ? 'Selecionado para este agendamento.' : 'Disponivel para este servico.'"
+            :description="selectedProfessionalId === professional.id ? 'Selecionado para este agendamento.' : 'Disponível para este serviço.'"
             :selected="selectedProfessionalId === professional.id"
             @select="selectProfessional(professional.id)"
           />
@@ -157,7 +157,7 @@
               <div>
                 <p class="text-sm font-semibold" style="color: var(--color-text);">Escolha o dia</p>
                 <p class="mt-1 text-xs" style="color: var(--color-text-muted);">
-                  Primeiro selecione a data para ver os horarios disponiveis.
+                  Primeiro selecione a data para ver os horários disponíveis.
                 </p>
               </div>
               <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em]" style="background: rgba(var(--color-brand-primary-rgb), 0.08); color: var(--color-brand-primary);">
@@ -180,18 +180,18 @@
           <section class="space-y-3 rounded-[1.4rem] border p-4 sm:p-5" style="border-color: var(--color-border); background: var(--color-surface);">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <p class="text-sm font-semibold" style="color: var(--color-text);">Horarios livres</p>
+                <p class="text-sm font-semibold" style="color: var(--color-text);">Horários livres</p>
                 <p class="mt-1 text-xs" style="color: var(--color-text-muted);">
                   {{ selectedDateLabel }}
                 </p>
               </div>
               <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em]" style="background: rgba(15, 23, 42, 0.05); color: var(--color-text-soft);">
-                Horarios
+                Horários
               </span>
             </div>
 
             <div v-if="availabilityLoading" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-              Buscando horarios disponiveis.
+              Buscando horários disponíveis.
             </div>
 
             <div v-else-if="availabilityError" class="rounded-[1.2rem] border px-4 py-3 text-sm" style="border-color: rgba(184, 107, 22, 0.24); background: var(--color-warning-soft); color: var(--color-warning);">
@@ -199,7 +199,7 @@
             </div>
 
             <div v-else-if="slotsForSelectedDate.length === 0" class="rounded-[1.2rem] border border-dashed px-4 py-6 text-sm" style="border-color: var(--color-border); color: var(--color-text-muted);">
-              Nenhum horario disponivel para a data selecionada.
+              Nenhum horário disponível para a data selecionada.
             </div>
 
             <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -241,7 +241,7 @@
           <BookingSummary
             v-if="selectedService && selectedSlot"
             title="Revise antes de confirmar"
-            badge="Ultimo passo"
+            badge="Último passo"
             :service-name="selectedService.name"
             :professional-name="professionalName(selectedSlot.professional_id)"
             :date-label="formatDateLong(selectedSlot.starts_at)"
@@ -260,7 +260,7 @@
             <div class="rounded-[1.2rem] border p-4" style="border-color: var(--color-border); background: var(--color-surface-muted);">
               <p class="text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--color-text-soft);">Como funciona</p>
               <p class="mt-2 text-sm" style="color: var(--color-text-muted);">
-                Ao confirmar, vamos reservar o horario imediatamente e mostrar a tela final com o codigo do agendamento.
+                Ao confirmar, vamos reservar o horário imediatamente e mostrar a tela final com o código do agendamento.
               </p>
             </div>
           </div>
@@ -313,6 +313,8 @@
 </template>
 
 <script setup lang="ts">
+import { copy } from '~/constants/copy'
+
 definePageMeta({ layout: 'booking' })
 
 const route = useRoute()
@@ -393,9 +395,9 @@ const customerFields: Array<{
   },
   {
     key: 'client_email',
-    label: 'Email',
+    label: 'E-mail',
     type: 'email',
-    placeholder: 'voce@exemplo.com',
+    placeholder: 'você@exemplo.com',
     autocomplete: 'email',
   },
   {
@@ -488,28 +490,28 @@ const selectedDateLabel = computed(() => {
 const currentStepContent = computed(() => {
   return {
     1: {
-      title: 'Escolha o servico',
-      description: 'Selecione o atendimento que voce quer agendar.',
-      footer: 'Escolha um servico para seguir.',
+      title: 'Escolha o serviço',
+      description: 'Selecione o atendimento que você quer agendar.',
+      footer: 'Escolha um serviço para seguir.',
     },
     2: {
       title: 'Escolha o profissional',
-      description: 'Nesta jornada o profissional e obrigatorio antes da busca de horarios.',
+      description: 'Nesta jornada o profissional é obrigatório antes da busca de horários.',
       footer: 'Selecione quem vai realizar o atendimento.',
     },
     3: {
-      title: 'Escolha o horario',
-      description: 'Mostramos apenas horarios disponiveis para o servico e profissional escolhidos.',
-      footer: 'Escolha uma data e um horario disponivel.',
+      title: 'Escolha o horário',
+      description: 'Mostramos apenas horários disponíveis para o serviço e profissional escolhidos.',
+      footer: 'Escolha uma data e um horário disponível.',
     },
     4: {
       title: 'Seus dados',
-      description: 'Agora so faltam seus dados para finalizar a reserva com seguranca.',
-      footer: 'Preencha nome, email, telefone e nascimento.',
+      description: 'Agora só faltam seus dados para finalizar a reserva com segurança.',
+      footer: 'Preencha nome, e-mail, telefone e nascimento.',
     },
     5: {
       title: 'Confirme seu agendamento',
-      description: 'Revise tudo antes de reservar o horario.',
+      description: 'Revise tudo antes de reservar o horário.',
       footer: 'Se estiver tudo certo, confirme agora.',
     },
   }[currentStep.value]!
@@ -519,11 +521,11 @@ const summaryItems = computed(() => {
   const items: Array<{ label: string; value: string }> = []
 
   if (bookingForm.client_name) items.push({ label: 'Cliente', value: bookingForm.client_name })
-  if (selectedService.value) items.push({ label: 'Servico', value: selectedService.value.name })
+  if (selectedService.value) items.push({ label: 'Serviço', value: selectedService.value.name })
   if (selectedProfessionalId.value) items.push({ label: 'Profissional', value: professionalName(selectedProfessionalId.value) })
   if (selectedSlot.value) {
     items.push({ label: 'Data', value: formatDateLong(selectedSlot.value.starts_at) })
-    items.push({ label: 'Horario', value: formatTime(selectedSlot.value.starts_at) })
+    items.push({ label: 'Horário', value: formatTime(selectedSlot.value.starts_at) })
   }
 
   return items
@@ -623,7 +625,7 @@ function goNext() {
   stepError.value = ''
 
   if (currentStep.value === 4 && !isDataStepValid.value) {
-    stepError.value = 'Preencha nome, email, telefone e data de nascimento para continuar.'
+    stepError.value = 'Preencha nome, e-mail, telefone e data de nascimento para continuar.'
     return
   }
 
@@ -653,7 +655,7 @@ async function fetchProfessionals(serviceId: string) {
           .filter((professional) => professional.id && professional.name)
       : []
   } catch (err: any) {
-    professionalsError.value = err?.data?.error?.message ?? 'Nao foi possivel carregar os profissionais para este servico.'
+    professionalsError.value = err?.data?.error?.message ?? 'Não foi possível carregar os profissionais para este serviço.'
   } finally {
     professionalsLoading.value = false
   }
@@ -681,7 +683,7 @@ async function fetchAvailability() {
     availabilityByDate.value = data.data
   } catch (err: any) {
     availabilityByDate.value = {}
-    availabilityError.value = err?.data?.error?.message ?? 'Nao foi possivel carregar os horarios.'
+    availabilityError.value = err?.data?.error?.message ?? 'Não foi possível carregar os horários.'
   } finally {
     availabilityLoading.value = false
   }
@@ -715,7 +717,7 @@ async function submitAppointment() {
     bookingResult.value = data.data
     await fetchAvailability()
   } catch (err: any) {
-    bookingError.value = err?.data?.error?.message ?? 'Nao foi possivel concluir o agendamento.'
+    bookingError.value = err?.data?.error?.message ?? 'Não foi possível concluir o agendamento.'
   } finally {
     bookingLoading.value = false
   }
@@ -726,7 +728,7 @@ function professionalName(professionalId: string) {
 }
 
 function formatPrice(priceCents: number | null) {
-  if (priceCents == null) return 'Preco sob consulta'
+  if (priceCents == null) return 'Preço sob consulta'
   return (priceCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 

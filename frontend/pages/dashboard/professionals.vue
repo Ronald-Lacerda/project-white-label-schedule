@@ -4,7 +4,7 @@
       <div class="space-y-2">
         <h1 class="ds-title">Profissionais</h1>
         <p class="max-w-2xl text-sm leading-6" style="color: var(--color-text-muted);">
-          Cadastre, organize e controle quais profissionais estao ativos para operacao e para o agendamento publico.
+          Cadastre, organize e controle quais profissionais estão ativos para operação e para o agendamento público.
         </p>
       </div>
 
@@ -95,9 +95,9 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <label class="ds-label">Servicos atendidos</label>
+              <label class="ds-label">Serviços atendidos</label>
               <p class="text-xs leading-5" style="color: var(--color-text-muted);">
-                Selecione os servicos que este profissional atende.
+                Selecione os serviços que este profissional atende.
               </p>
             </div>
             <span v-if="servicesLoading" class="text-xs" style="color: var(--color-text-muted);">Carregando...</span>
@@ -116,7 +116,7 @@
             class="rounded-[1rem] border px-4 py-3 text-sm"
             style="border-color: var(--color-border); color: var(--color-text-muted); background: var(--color-surface-muted);"
           >
-            Nenhum servico ativo foi encontrado. Cadastre um servico para liberar este profissional no agendamento publico.
+            Nenhum serviço ativo foi encontrado. Cadastre um serviço para liberar este profissional no agendamento público.
           </div>
 
           <div v-else class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -150,7 +150,7 @@
             class="rounded-[1rem] border px-4 py-3 text-sm"
             style="border-color: rgba(180, 83, 9, 0.2); background: rgba(245, 158, 11, 0.12); color: rgb(146, 64, 14);"
           >
-            Este profissional nao aparecera no agendamento publico ate ter ao menos um servico vinculado.
+            Este profissional não aparecerá no agendamento público até ter ao menos um serviço vinculado.
           </p>
         </div>
         <p v-if="modal.error" class="text-sm" style="color: var(--color-danger);">{{ modal.error }}</p>
@@ -251,7 +251,7 @@ async function openModal(professional?: Professional) {
       modal.phone = formatBrazilianPhoneInput(detailed.phone ?? '')
       modal.selectedServiceIds = [...detailed.service_ids]
     } catch (e: any) {
-      modal.error = e?.data?.error?.message ?? 'Erro ao carregar os servicos do profissional.'
+      modal.error = e?.data?.error?.message ?? 'Erro ao carregar os serviços do profissional.'
     }
   }
 }
@@ -318,7 +318,7 @@ function serviceMetaStyle(selected: boolean) {
 
 function serviceSummary(professional: Professional) {
   if (professional.service_ids.length === 0) {
-    return 'Sem servicos vinculados ao agendamento publico'
+    return 'Sem serviços vinculados ao agendamento público'
   }
 
   const names = professional.service_ids
@@ -326,7 +326,7 @@ function serviceSummary(professional: Professional) {
     .filter((name): name is string => Boolean(name))
 
   if (names.length === 0) {
-    return `${professional.service_ids.length} servico(s) vinculado(s)`
+    return `${professional.service_ids.length} serviço(s) vinculado(s)`
   }
 
   const preview = names.slice(0, 2).join(', ')

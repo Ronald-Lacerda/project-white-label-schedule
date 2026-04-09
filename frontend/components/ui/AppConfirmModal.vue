@@ -31,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+import { copy } from '~/constants/copy'
+
 const props = withDefaults(defineProps<{
   open: boolean
   title: string
@@ -46,11 +48,11 @@ const props = withDefaults(defineProps<{
   loading?: boolean
 }>(), {
   description: '',
-  eyebrow: 'Confirmacao',
+  eyebrow: copy.confirmModal.eyebrow,
   details: '',
-  confirmLabel: 'Confirmar',
-  cancelLabel: 'Cancelar',
-  loadingLabel: 'Processando...',
+  confirmLabel: copy.common.confirm,
+  cancelLabel: copy.common.cancel,
+  loadingLabel: copy.common.processing,
   confirmVariant: 'danger',
   tone: 'danger',
   loading: false,
